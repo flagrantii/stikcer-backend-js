@@ -154,7 +154,8 @@ export class CartsService {
             }
           },
           data: {
-            quantity: updateCartDto.quantity
+            amount: updateCartDto.amount,
+            amountA3plus: updateCartDto.amountA3plus
           }
         });
 
@@ -175,7 +176,8 @@ export class CartsService {
               }
             },
             data: {
-              quantity: updateCartDto.quantity
+              amount: updateCartDto.amount,
+              amountA3plus: updateCartDto.amountA3plus
             }
           });
 
