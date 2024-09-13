@@ -8,7 +8,17 @@ export class CreateOrderLineDto {
     readonly productId: number
 
     @IsNumber()
-    @IsPositive()
     @IsNotEmpty()
-    readonly quantity: number
+    @IsPositive()
+    readonly amount: number
+
+    @IsNumber()
+    @IsNotEmpty()
+    @IsPositive()
+    readonly amountA3plus: number
+
+    @IsNumber()
+    @IsNotEmpty()
+    @IsPositive()
+    readonly subTotal: number
 }

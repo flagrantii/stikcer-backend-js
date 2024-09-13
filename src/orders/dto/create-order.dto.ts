@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, IsUUID } from "class-validator";
+import { IsNotEmpty, IsNumber, IsPositive, IsString, IsUUID } from "class-validator";
 
 export class CreateOrderDto {
     id: string
@@ -6,4 +6,12 @@ export class CreateOrderDto {
     @IsNumber()
     @IsNotEmpty()
     readonly userId: number
+
+    @IsNotEmpty()
+    @IsPositive()
+    readonly orderSubTotal: string
+
+    @IsNotEmpty()
+    @IsPositive()
+    readonly shippingFee: string
 }
