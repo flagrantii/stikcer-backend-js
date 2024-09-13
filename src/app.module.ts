@@ -14,6 +14,9 @@ import { ConfigModule } from '@nestjs/config';
 import { CategoriesModule } from './categories/categories.module';
 import { AuthorizeUser } from './middleware/authorizeUser';
 import { CartsModule } from './carts/carts.module';
+import { FilesService } from './files/files.service';
+import { FilesController } from './files/files.controller';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -24,9 +27,9 @@ import { CartsModule } from './carts/carts.module';
     UsersModule, 
     ProductsModule, 
     OrdersModule, 
-    CategoriesModule, CartsModule,
+    CategoriesModule, CartsModule, FilesModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, FilesController],
   providers: [
     AppService,
     Authenticated,
@@ -34,7 +37,8 @@ import { CartsModule } from './carts/carts.module';
     {
       provide: APP_PIPE,
       useClass: ValidationPipe
-    }
+    },
+    FilesService
   ],
 })
 
