@@ -29,12 +29,16 @@ model Address {
   id          Int      @id @default(autoincrement())
   userId      Int      @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  addressType String
-  houseNumber String
-  street      String
+  reciverName String
+  phone       String
+  address     String
+  subDistrict String
   district    String
-  city        String
+  province    String
+  country     String
   postalCode  String
+  taxPayerName String
+  taxPayerId   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -49,8 +53,8 @@ model Product {
   material     String
   shape        String
   printingSide String
-  parcelColor  String
-  inkColor     String
+  parcelColor  Json
+  inkColor     Json
   unitPrice    Float
   amount       Int
   subTotal     Float
@@ -76,6 +80,7 @@ model File {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId   Int
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  categoryId  Int
   name        String
   type        String
   size        Int
