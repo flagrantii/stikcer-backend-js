@@ -96,6 +96,7 @@ model Order {
   shippingMethod String
   paymentId      Int
   payment        Payment?
+  status         String
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 }
