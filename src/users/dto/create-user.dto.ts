@@ -3,11 +3,11 @@ import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } fr
 export class CreateUserDto {
     @IsString()
     @IsNotEmpty()
-    readonly fname: string
+    readonly firstname: string
 
     @IsString()
     @IsNotEmpty()
-    readonly lname: string
+    readonly lastname: string
 
     @IsEmail()
     @IsNotEmpty()
@@ -15,17 +15,9 @@ export class CreateUserDto {
 
     @IsString()
     @IsNotEmpty()
-    readonly username: string
-
-    @IsString()
-    @IsNotEmpty()
     password: string
 
     @IsPhoneNumber('TH')
     @IsNotEmpty()
-    readonly tel: string
-
-    @IsNumber()
-    @IsNotEmpty()
-    readonly roleId: number
+    readonly phone: string
 }

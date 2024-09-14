@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsEmail, IsEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
+import { IsEmail, IsEmpty, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 import { CreateAddressDto } from './create-address.dto';
 
 export class UpdateAddressDto extends PartialType(CreateAddressDto) {
@@ -22,4 +22,8 @@ export class UpdateAddressDto extends PartialType(CreateAddressDto) {
     @IsString()
     @IsOptional()
     postalCode?: string;
+
+    @IsString()
+    @IsOptional()
+    readonly addressType: string
 }

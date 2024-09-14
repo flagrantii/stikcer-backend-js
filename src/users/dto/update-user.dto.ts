@@ -5,11 +5,11 @@ import { IsEmail, IsEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
     @IsString()
     @IsOptional()
-    readonly fname?: string
+    readonly firstname?: string
 
     @IsString()
     @IsOptional()
-    readonly lname?: string
+    readonly lastname?: string
 
     @IsEmail()
     @IsOptional()
@@ -17,17 +17,9 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
 
     @IsString()
     @IsOptional()
-    readonly username?: string
-
-    @IsString()
-    @IsOptional()
     password?: string
 
     @IsPhoneNumber('TH')
     @IsOptional()
-    readonly tel?: string
-
-    @IsNumber()
-    @IsEmpty()
-    readonly roleId: number
+    readonly phone?: string
 }

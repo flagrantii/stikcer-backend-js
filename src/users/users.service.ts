@@ -22,7 +22,13 @@ export class UsersService {
 
       // executing create user to database
       const user = await this.databaseService.user.create({
-        data: createUserDto
+        data: {
+          firstName: createUserDto.firstname,
+          lastName: createUserDto.lastname,
+          email: createUserDto.email,
+          password: createUserDto.password,
+          phone: createUserDto.phone
+        }
       })
       delete user.password
 
@@ -48,7 +54,18 @@ export class UsersService {
   async InsertAddress(addressDto: CreateAddressDto): Promise<{ address: Address, err: string }> {
     try {
       const address = await this.databaseService.address.create({
-        data: addressDto
+        data: {
+          houseNumber: addressDto.houseNumber,
+          street: addressDto.street,
+          district: addressDto.district,
+          city: addressDto.city,
+          postalCode: addressDto.postalCode,
+          addressType: addressDto.addressType,
+          user: {
+            connect: {
+              id: addressDto.userId
+            }}
+        }
       })
 
       return {

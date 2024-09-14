@@ -22,4 +22,8 @@ export class CreateAddressDto {
     @IsString()
     @IsNotEmpty()
     postalCode: string;
+
+    @IsString()
+    @IsNotEmpty()
+    readonly addressType: string
 }
