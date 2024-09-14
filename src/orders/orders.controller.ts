@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Req } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { Response } from 'express';
-import { CreateOrderDataDto } from './dto/create-order.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 import { Order } from '@prisma/client';
 
 @Controller('orders')
@@ -12,7 +12,7 @@ export class OrdersController {
   async CreateOrder(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() createOrderDataDto: CreateOrderDataDto
+    @Body() createOrderDataDto: CreateOrderDto
   ) {
     createOrderDataDto.userId = req['user'].id
     const { order, err} = await this.ordersService.InsertOrderWithLines(createOrderDataDto);
@@ -68,7 +68,7 @@ export class OrdersController {
   async GetOrderById(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('id') id: string
+    @Param('id') id: number
   ) {
     const { order, err } = await this.ordersService.FindOrderById(id, req);
     if (err !== null) {
@@ -100,7 +100,7 @@ export class OrdersController {
   async DeleteOrderById(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('id') id: string
+    @Param('id') id: number
   ) {
     const { err } = await this.ordersService.DeleteOrderById(id, req);
     if (err !== null) {

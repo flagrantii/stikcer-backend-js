@@ -1,22 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { Order } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
-import { CreateOrderDataDto } from './dto/create-order.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 import * as uuid from 'uuid'
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async InsertOrderWithLines(createOrderDataDto: CreateOrderDataDto): Promise<{ order: Order, err: string }> {
+  async InsertOrderWithLines(createOrderDto: CreateOrderDto): Promise<{ order: Order, err: string }> {
     try {
       const orderId: number = parseInt(uuid.v4().split('-').join(''), 16)
       return this.databaseService.$transaction(async (prisma) => {
 
         //calcuilate subtotal
         let subTotal = 0
-        for (let i = 0; i < createOrderDataDto.items.length; i++) {
-          const item = createOrderDataDto.items[i]
+        for (let i = 0; i < createOrderDto.items.length; i++) {
+          const item = createOrderDto.items[i]
           const product = await prisma.product.findUnique({
             where: {
               id: item.productId
@@ -30,18 +30,18 @@ export class OrdersService {
         const createdOrder = await prisma.order.create({
           data: {
             id: orderId,
-            userId: createOrderDataDto.userId,
+            userId: createOrderDto.userId,
             orderSubTotal: subTotal,
-            shippingFee: createOrderDataDto.shippingFee,
-            shippingMethod: createOrderDataDto.shippingMethod,
-            paymentId: createOrderDataDto.paymentId,
-            status: "pending"
+            shippingFee: createOrderDto.shippingFee,
+            shippingMethod: createOrderDto.shippingMethod,
+            paymentId: createOrderDto.paymentId,
+            status: createOrderDto.status
           }
         })
 
         //create order lines
-        for (let i = 0; i < createOrderDataDto.items.length; i++) {
-          const item = createOrderDataDto.items[i]
+        for (let i = 0; i < createOrderDto.items.length; i++) {
+          const item = createOrderDto.items[i]
           await prisma.orderLine.createMany({
             data: {
               orderId: orderId,
