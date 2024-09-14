@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Req } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { Response } from 'express';
-import { CreateOrderDataDto } from './dto/create-orderData.dto';
+import { CreateOrderDataDto } from './dto/create-order.dto';
 import { Order } from '@prisma/client';
 
 @Controller('orders')

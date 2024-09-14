@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Order } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
-import { CreateOrderDataDto } from './dto/create-orderData.dto';
+import { CreateOrderDataDto } from './dto/create-order.dto';
 import * as uuid from 'uuid'
 
 @Injectable()
@@ -10,22 +10,32 @@ export class OrdersService {
 
   async InsertOrderWithLines(createOrderDataDto: CreateOrderDataDto): Promise<{ order: Order, err: string }> {
     try {
-      const orderId: string = uuid.v4();
+      const orderId: number = parseInt(uuid.v4().split('-').join(''), 16)
       return this.databaseService.$transaction(async (prisma) => {
 
-        //calcualte sub total
-        let orderSubTotal = 0
-        createOrderDataDto.items.forEach((item) => {
-          orderSubTotal += item.subTotal
-        })
+        //calcuilate subtotal
+        let subTotal = 0
+        for (let i = 0; i < createOrderDataDto.items.length; i++) {
+          const item = createOrderDataDto.items[i]
+          const product = await prisma.product.findUnique({
+            where: {
+              id: item.productId
+            }
+          })
 
-        //create order line 
+          subTotal += product.unitPrice * product.amount
+        }
+
+        //create order
         const createdOrder = await prisma.order.create({
           data: {
             id: orderId,
             userId: createOrderDataDto.userId,
-            shippingFee: 0,
-            orderSubTotal: orderSubTotal,
+            orderSubTotal: subTotal,
+            shippingFee: createOrderDataDto.shippingFee,
+            shippingMethod: createOrderDataDto.shippingMethod,
+            paymentId: createOrderDataDto.paymentId,
+            status: "pending"
           }
         })
 
@@ -35,10 +45,7 @@ export class OrdersService {
           await prisma.orderLine.createMany({
             data: {
               orderId: orderId,
-              productId: item.productId,
-              amount: item.amount,
-              subTotal: item.subTotal,
-              amountA3plus: item.amountA3plus,
+              productId: item.productId
             }
           })
         }
@@ -102,7 +109,7 @@ export class OrdersService {
     }
   }
 
-  async FindOrderById(id: string, req: Request): Promise<{ order: Order, err: string }> {
+  async FindOrderById(id: number, req: Request): Promise<{ order: Order, err: string }> {
     try {
       const order = await this.databaseService.order.findUnique({
         where: {
@@ -151,7 +158,7 @@ export class OrdersService {
     }  
   }
 
-  async DeleteOrderById(id: string, req: Request): Promise<{ err: string }> {
+  async DeleteOrderById(id: number, req: Request): Promise<{ err: string }> {
     try {
       const order = await this.databaseService.order.findUnique({
         where: {

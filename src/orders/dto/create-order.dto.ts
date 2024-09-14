@@ -1,17 +1,22 @@
-import { IsNotEmpty, IsNumber, IsPositive, IsString, IsUUID } from "class-validator";
+import { IsNotEmpty, IsNumber, IsPositive, IsString } from "class-validator"
+import { CreateOrderLineDto } from "./create-orderLine.dto"
 
-export class CreateOrderDto {
-    id: string
-    
-    @IsNumber()
-    @IsNotEmpty()
-    readonly userId: number
+export class CreateOrderDataDto {
+    id: number
+    userId: number
 
     @IsNotEmpty()
-    @IsPositive()
-    readonly orderSubTotal: string
+    items: CreateOrderLineDto[]
 
     @IsNotEmpty()
     @IsPositive()
-    readonly shippingFee: string
+    shippingFee: number
+
+    @IsNotEmpty()
+    @IsString()
+    shippingMethod: string
+
+    @IsNotEmpty()
+    @IsString()
+    paymentId: number
 }
