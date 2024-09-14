@@ -3,23 +3,16 @@ import { CreateProductDto } from './create-product.dto';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateProductDto extends PartialType(CreateProductDto) {
+
+    @IsOptional()
     @IsString()
-    @IsOptional()
-    readonly name?: string
+    readonly fileUrl: string
 
-    @IsNumber()
     @IsOptional()
-    readonly unitPrice?: number
+    @IsString()
+    readonly fileType: string
 
-    @IsNumber()
     @IsOptional()
-    readonly cost?: number
-
     @IsNumber()
-    @IsOptional()
-    readonly quantity?: number
-
-    @IsNumber()
-    @IsOptional()
-    readonly categoryId?: number
+    readonly fileSize: number
 }
