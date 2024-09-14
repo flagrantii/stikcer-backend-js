@@ -55,16 +55,17 @@ export class UsersService {
     try {
       const address = await this.databaseService.address.create({
         data: {
-          houseNumber: addressDto.houseNumber,
-          street: addressDto.street,
-          district: addressDto.district,
-          city: addressDto.city,
+          userId: addressDto.userId,
+          reciverName: addressDto.reciverName,
+          phone: addressDto.phone,
+          address: addressDto.address,
+          subDistrict: addressDto.subDistrict || null,
+          district: addressDto.district || null,
+          province: addressDto.province || null,
+          country: addressDto.country,
           postalCode: addressDto.postalCode,
-          addressType: addressDto.addressType,
-          user: {
-            connect: {
-              id: addressDto.userId
-            }}
+          taxPayerId: addressDto.taxPayerId || null,
+          taxPayerName: addressDto.taxPayerName || null
         }
       })
 

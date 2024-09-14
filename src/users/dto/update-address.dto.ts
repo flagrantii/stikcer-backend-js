@@ -5,25 +5,41 @@ import { CreateAddressDto } from './create-address.dto';
 export class UpdateAddressDto extends PartialType(CreateAddressDto) {
     @IsString()
     @IsOptional()
-    houseNumber?: string;
+    reciverName?: string
 
     @IsString()
     @IsOptional()
-    street?: string;
+    address?: string
 
     @IsString()
     @IsOptional()
-    district?: string;
+    phone?: string
 
     @IsString()
     @IsOptional()
-    city?: string;
+    subDistrict?: string
 
     @IsString()
     @IsOptional()
-    postalCode?: string;
+    district?: string
 
     @IsString()
     @IsOptional()
-    readonly addressType: string
+    province?: string
+
+    @IsString()
+    @IsOptional()
+    country?: string
+
+    @IsString()
+    @IsOptional()
+    postalCode?: string
+
+    @IsString()
+    @IsOptional()
+    taxPayerId?: string
+
+    @IsString()
+    @IsOptional()
+    taxPayerName?: string
 }
