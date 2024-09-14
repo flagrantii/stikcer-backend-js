@@ -13,7 +13,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { CategoriesModule } from './categories/categories.module';
 import { AuthorizeUser } from './middleware/authorizeUser';
-import { CartsModule } from './carts/carts.module';
 import { FilesService } from './files/files.service';
 import { FilesController } from './files/files.controller';
 import { FilesModule } from './files/files.module';
@@ -27,7 +26,8 @@ import { FilesModule } from './files/files.module';
     UsersModule, 
     ProductsModule, 
     OrdersModule, 
-    CategoriesModule, CartsModule, FilesModule,
+    CategoriesModule,
+    FilesModule,
   ],
   controllers: [AppController, FilesController],
   providers: [
