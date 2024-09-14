@@ -10,30 +10,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Role {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
-}
-
 model User {
   id        Int       @id @default(autoincrement())
   firstName String
   lastName  String
   email     String    @unique
-  username  String    @unique
   password  String
   phone     String
-  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  roleId    Int
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   address   Address?
-  carts     Cart[]
   orders    Order[]
   files     File[]
+  product Product[]
 }
 
 model Address {
@@ -50,38 +39,25 @@ model Address {
   updatedAt   DateTime @updatedAt
 }
 
-model Cart {
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId   Int
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  amount      Int
-  amountA3plus Int
-  subTotal    Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@id([userId, productId])
-  @@unique([userId, productId])
-}
-
 model Product {
-  id           Int             @id @default(autoincrement())
-  name         String
-  unitPrice    Float
-  cost         Float
   categoryId   Int
   category     ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id           Int             @id @default(autoincrement())
+  userId       Int
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   size         String
   material     String
   shape        String
   printingSide String
   parcelColor  String
   inkColor     String
+  unitPrice    Float
+  amount       Int
+  subTotal     Float
   note         String?
   orderLines   OrderLine[]
-  carts        Cart[]
   files        File[]
+  isPurchased  Boolean
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 }
@@ -89,21 +65,21 @@ model Product {
 model ProductCategory {
   id        Int       @id @default(autoincrement())
   name      String    @unique
+  products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  products  Product[]
 }
 
 model File {
   id          Int      @id @default(autoincrement())
-  name        String
-  type        String
-  size        Int
-  url         String
   userId      Int
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId   Int
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  size        Int
+  url         String
   isPurchased Boolean
   deletedAt   DateTime?
   createdAt   DateTime @default(now())
@@ -111,25 +87,24 @@ model File {
 }
 
 model Order {
-  id             String      @id
+  id             Int      @id @default(autoincrement())
   userId         Int
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
   orderLines     OrderLine[]
   orderSubTotal  Float
   shippingFee    Float
+  shippingMethod String
+  paymentId      Int
   payment        Payment?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model OrderLine {
-  orderId      String
+  orderId      Int
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId    Int
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  amount       Int
-  amountA3plus Int
-  subTotal     Float
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -138,7 +113,7 @@ model OrderLine {
 }
 
 model Payment {
-  orderId       String   @unique
+  orderId       Int  @unique
   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   paymentIntent String
   amount        Float
