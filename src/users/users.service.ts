@@ -51,43 +51,6 @@ export class UsersService {
     }
   }
 
-  async InsertAddress(addressDto: CreateAddressDto): Promise<{ address: Address, err: string }> {
-    try {
-      const address = await this.databaseService.address.create({
-        data: {
-          userId: addressDto.userId,
-          reciverName: addressDto.reciverName,
-          phone: addressDto.phone,
-          address: addressDto.address,
-          subDistrict: addressDto.subDistrict || null,
-          district: addressDto.district || null,
-          province: addressDto.province || null,
-          country: addressDto.country,
-          postalCode: addressDto.postalCode,
-          taxPayerId: addressDto.taxPayerId || null,
-          taxPayerName: addressDto.taxPayerName || null
-        }
-      })
-
-      return {
-        address: address,
-        err: null
-      }
-    } catch (err) {
-      let message = err.message
-
-      if (err.code === "P2002" && err.meta?.target?.includes("userId")) {
-        message = "This user already has address."
-      }
-      console.log("Error: ", err)
-
-      return {
-        address: null,
-        err: message
-      }
-    }
-  }
-
   async FindUserProfile(userId: number): Promise<{ user: User, err: string }> {
     try {
       const user = await this.databaseService.user.findUnique({
@@ -152,33 +115,8 @@ export class UsersService {
         }
       })
 
-      // role: admin
-      if (req['user'].roleId === 1) {
-        if (!existed) {
-          return {
-            user: null,
-            err: "not found this user"
-          }
-        }
-
-        if (updateUserDto.password)
-          updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10)
-
-        const user = await this.databaseService.user.update({
-          where: {
-            id
-          },
-          data: updateUserDto
-        })
-        delete user.password;
-
-        return {
-          user,
-          err: null
-        }
-      }
       // role: user
-      else if (req['user'].roleId === 2) {
+      if (req['user'].roleId === 2) {
         // ownership validation
         if (existed && req['user'].id === existed.id) {
           if (updateUserDto.password)
@@ -266,11 +204,104 @@ export class UsersService {
     }
   }
 
+  async InsertAddress(addressDto: CreateAddressDto): Promise<{ address: Address, err: string }> {
+    try {
+      const address = await this.databaseService.address.create({
+        data: {
+          userId: addressDto.userId,
+          reciverName: addressDto.reciverName,
+          phone: addressDto.phone,
+          address: addressDto.address,
+          subDistrict: addressDto.subDistrict || null,
+          district: addressDto.district || null,
+          province: addressDto.province || null,
+          country: addressDto.country,
+          postalCode: addressDto.postalCode,
+          taxPayerId: addressDto.taxPayerId || null,
+          taxPayerName: addressDto.taxPayerName || null
+        }
+      })
+
+      return {
+        address: address,
+        err: null
+      }
+    } catch (err) {
+      let message = err.message
+
+      if (err.code === "P2002" && err.meta?.target?.includes("userId")) {
+        message = "This user already has address."
+      }
+      console.log("Error: ", err)
+
+      return {
+        address: null,
+        err: message
+      }
+    }
+  }
+
+  async FindAddressById(id: number): Promise<{ address: Address, err: string }> {
+    try {
+      const address = await this.databaseService.address.findUnique({
+        where: {
+          id: id
+        }
+      })
+
+      if (!address) {
+        return {
+          address: null,
+          err: "not found this address"
+        }
+      }
+
+      return {
+        address,
+        err: null
+      }
+    } catch (err) {
+      console.log("Error: ", err)
+      return {
+        address: null,
+        err: err.message
+      }
+    }
+  }
+
+  async FindUserAddressById(id: number): Promise<{ address: Address, err: string }> {
+    try {
+      const address = await this.databaseService.address.findUnique({
+        where: {
+          userId: id
+        }
+      })
+
+      if (!address) {
+        return {
+          address: null,
+          err: "not found this address"
+        }
+      }
+
+      return {
+        address,
+        err: null
+      }
+    } catch (err) {
+      console.log("Error: ", err)
+      return {
+        address: null,
+        err: err.message
+      }
+    }
+  }
+
   async UpdateAddressById(id: number, updateAddressDto: UpdateAddressDto, req: Request): Promise<{ address: Address, err: string }> {
     try {
       const existed = await this.databaseService.address.findUnique({
         where: {
-          userId: id
+          id
         }
       })
 
@@ -285,7 +316,7 @@ export class UsersService {
 
         const address = await this.databaseService.address.update({
           where: {
-            userId: id
+            id
           },
           data: updateAddressDto
         })
@@ -308,7 +339,7 @@ export class UsersService {
 
           const address = await this.databaseService.address.update({
             where: {
-              userId: id
+              id
             },
             data: updateAddressDto
           })
@@ -337,7 +368,7 @@ export class UsersService {
     try {
       const existed = await this.databaseService.address.findUnique({
         where: {
-          userId: id
+          id
         }
       })
 
@@ -351,7 +382,7 @@ export class UsersService {
 
         await this.databaseService.address.delete({
           where: {
-            userId: id
+            id
           }
         })
 
@@ -371,7 +402,7 @@ export class UsersService {
 
           await this.databaseService.address.delete({
             where: {
-              userId: id
+              id
             }
           })
 
