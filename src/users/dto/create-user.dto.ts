@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from "class-validator";
+import { IsEmail, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from "class-validator";
 
 export class CreateUserDto {
     @IsString()
@@ -20,4 +20,8 @@ export class CreateUserDto {
     @IsPhoneNumber('TH')
     @IsNotEmpty()
     readonly phone: string
+
+    @IsNotEmpty()
+    @IsEnum(['ADMIN', 'USER']) // enum
+    readonly role: string
 }
