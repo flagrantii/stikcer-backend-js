@@ -44,53 +44,71 @@ import { FilesModule } from './files/files.module';
 
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-      consumer
-        .apply(Authenticated)
-        .forRoutes(
-          // users
-          { path: "users/address", method: RequestMethod.POST },
-          { path: "users/me", method: RequestMethod.GET },
-          { path: "users/:id", method: RequestMethod.PATCH },
-          { path: "users/:id", method: RequestMethod.DELETE },
-          { path: "users/address/:id", method: RequestMethod.PATCH },
-          { path: "users/address/:id", method: RequestMethod.DELETE },
+    consumer
+    .apply(Authenticated)
+    .forRoutes(
+      //Auth
+      { path: "auth/logout", method: RequestMethod.POST },
 
-          // orders
-          { path: "orders", method: RequestMethod.GET },
-          { path: "orders/:id", method: RequestMethod.GET },
-          { path: "orders/:id", method: RequestMethod.DELETE },
+      //products
+      { path: "products", method: RequestMethod.POST },
+      { path: "products", method: RequestMethod.GET },
+      { path: "products/:productId", method: RequestMethod.GET },
+      { path: "products/:productId", method: RequestMethod.PATCH },
+      { path: "products/:productId", method: RequestMethod.DELETE },
+      { path: "products/category/:categoryId", method: RequestMethod.GET },
 
-          // carts
-          { path: "carts", method: RequestMethod.GET },
-          { path: "carts/:productId", method: RequestMethod.GET },
-          { path: "carts/:productId", method: RequestMethod.PATCH },
-          { path: "carts/:productId", method: RequestMethod.DELETE },
-          
-        )
-        .apply(Authenticated, AuthorizeAdmin)
-        .forRoutes(
-          // users
-          { path: "users", method: RequestMethod.GET },
+      //orders
+      { path : "orders", method: RequestMethod.GET },
+      { path : "orders", method: RequestMethod.POST },
+      { path : "orders/:orderId", method: RequestMethod.GET },
+      { path : "orders/:orderId", method: RequestMethod.DELETE },
 
-          // products
-          { path: "products", method: RequestMethod.POST },
-          { path: "products/:id", method: RequestMethod.PATCH },
-          { path: "products/:id", method: RequestMethod.DELETE },
+      //files
+      { path : "files", method: RequestMethod.POST },
+      { path : "files/:fileId", method: RequestMethod.GET },
+      { path : "files/:fileId", method: RequestMethod.PATCH },
+      { path : "files/:fileId", method: RequestMethod.DELETE },
+      { path : "files/product/:productId", method: RequestMethod.GET },
 
-          // categories
-          { path: "categories", method: RequestMethod.POST },
-          { path: "categories/:id", method: RequestMethod.PATCH },
-          { path: "categories/:id", method: RequestMethod.DELETE },
+    )
+    .apply(AuthorizeAdmin)
+    .forRoutes(
+      // users
+    
+      { path : "users/:userId", method: RequestMethod.GET },
+      { path : "users/:userId", method: RequestMethod.PATCH },
+      { path : "users/:userId", method: RequestMethod.DELETE },
+      { path : "users/:userId/address", method: RequestMethod.GET },
+      { path : "users/:userId/address", method: RequestMethod.POST },
+      { path : "users/:userId/address/:addressId", method: RequestMethod.GET },
+      { path : "users/:userId/address/:addressId", method: RequestMethod.PATCH },
+      { path : "users/:userId/address/:addressId", method: RequestMethod.DELETE },
 
-        )
-        .apply(Authenticated, AuthorizeUser)
-        .forRoutes(
-          // orders
-          { path: "orders", method: RequestMethod.POST },
+      // products
+      { path: "products/user/:userId", method: RequestMethod.GET },
 
-          // carts
-          { path: "carts", method: RequestMethod.POST },
+      // orders
+      { path : "orders/user/:userId", method: RequestMethod.GET },
+      { path : "orders/:orderId", method: RequestMethod.PATCH },
 
-        )
+      // categories
+      { path : "categories", method: RequestMethod.POST },
+      { path : "categories/:categoryId", method: RequestMethod.PATCH },
+      { path : "categories/:categoryId", method: RequestMethod.DELETE },
+
+    )
+    .apply(AuthorizeUser)
+    .forRoutes(
+      // users
+      { path : "users/me", method: RequestMethod.GET },
+      { path : "users/me", method: RequestMethod.PATCH },
+      { path : "users/me/address", method: RequestMethod.POST },
+      { path : "users/me/address", method: RequestMethod.GET },
+      { path : "users/me/address/:addressId", method: RequestMethod.GET },
+      { path : "users/me/address/:addressId", method: RequestMethod.PATCH },
+      { path : "users/me/address/:addressId", method: RequestMethod.DELETE },
+
+    )
   }
 }
