@@ -14,43 +14,7 @@ export class UsersService {
   constructor(
     private readonly databaseService: DatabaseService,
   ) { }
-  async InsertUser(createUserDto: CreateUserDto): Promise<{ user: User, err: string }> {
-    try {
-      // hashing password
-      const hashedPassword: string = await bcrypt.hash(createUserDto.password, 10)
-      createUserDto.password = hashedPassword
-
-      // executing create user to database
-      const user = await this.databaseService.user.create({
-        data: {
-          firstName: createUserDto.firstname,
-          lastName: createUserDto.lastname,
-          email: createUserDto.email,
-          password: createUserDto.password,
-          phone: createUserDto.phone
-        }
-      })
-      delete user.password
-
-      return {
-        user: user,
-        err: null
-      }
-    } catch (err) {
-      let message = "An error occurred while processing your request.";
-
-      if (err.code === "P2002" && err.meta?.target?.includes("email")) {
-        message = "This email address is already registered."
-      }
-
-      console.log("Error: ", err)
-      return {
-        user: null,
-        err: message
-      }
-    }
-  }
-
+  
   async FindUserProfile(userId: number): Promise<{ user: User, err: string }> {
     try {
       const user = await this.databaseService.user.findUnique({
