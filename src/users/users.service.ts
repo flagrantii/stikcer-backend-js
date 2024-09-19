@@ -80,7 +80,7 @@ export class UsersService {
       })
 
       // role: user
-      if (req['user'].roleId === 2) {
+      if (req['user'].role === "USER") {
         // ownership validation
         if (existed && req['user'].id === existed.id) {
           if (updateUserDto.password)
@@ -123,7 +123,7 @@ export class UsersService {
       })
 
       // role: admin
-      if (req['user'].roleId === 1) {
+      if (req['user'].role === 1) {
         if (!existed) {
           return {
             err: "not found this user"
@@ -142,7 +142,7 @@ export class UsersService {
 
       }
       // role: user
-      else if (req['user'].roleId === 2) {
+      else if (req['user'].role === "USER") {
         // ownership validation
         if (existed && req['user'].id === existed.id) {
           await this.databaseService.user.delete({
@@ -270,7 +270,7 @@ export class UsersService {
       })
 
       // role: admin
-      if (req['user'].roleId === 1) {
+      if (req['user'].role === 1) {
         if (!existed) {
           return {
             address: null,
@@ -291,7 +291,7 @@ export class UsersService {
         }
       }
       // role: user
-      else if (req['user'].roleId === 2) {
+      else if (req['user'].role === "USER") {
         // ownership validation
         if (req['user'].id === id) {
           if (!existed) {
@@ -337,7 +337,7 @@ export class UsersService {
       })
 
       // role: admin
-      if (req['user'].roleId === 1) {
+      if (req['user'].role === 1) {
         if (!existed) {
           return {
             err: "not found this address"
@@ -355,7 +355,7 @@ export class UsersService {
         }
       }
       // role: user
-      else if (req['user'].roleId === 2) {
+      else if (req['user'].role === "USER") {
         // ownership validation
         if (req['user'].id === id) {
           if (!existed) {

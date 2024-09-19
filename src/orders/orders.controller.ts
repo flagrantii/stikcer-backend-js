@@ -37,7 +37,7 @@ export class OrdersController {
     let orders: Order[]
     let err: string
 
-    const userRole: number = req['user'].roleId
+    const userRole: number = req['user'].role
 
     switch (userRole) {
       case 1:

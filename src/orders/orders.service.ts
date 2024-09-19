@@ -121,7 +121,7 @@ export class OrdersService {
       })
 
       // role: admin
-      if (req['user'].roleId === 1) {
+      if (req['user'].role === "ADMIN") {
         if (!order) {
           return {
             order: null,
@@ -135,7 +135,7 @@ export class OrdersService {
         }
       } 
       // role: user
-      else if (req['user'].roleId === 2) {
+      else if (req['user'].role=== "USER") {
         // ownership validation
         if (order && order.userId === req['user'].id) {
           return {
@@ -167,7 +167,7 @@ export class OrdersService {
       })
 
       // role: admin
-      if (req['user'].roleId === 1) {
+      if (req['user'].role === "ADMIN") {
         if (!order) {
           return {
             err: "not found this order"
@@ -185,7 +185,7 @@ export class OrdersService {
         }
       }
       // role: user
-      else if (req['user'].roleId === 2) {
+      else if (req['user'].role === "USER") {
         // ownership validation
         if (order && order.userId === req['user'].id) {
           await this.databaseService.order.delete({
