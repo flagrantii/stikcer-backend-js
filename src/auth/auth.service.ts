@@ -22,8 +22,13 @@ export class AuthService {
 
             if (!existUser) throw new HttpException("User not found", HttpStatus.NOT_FOUND)
             
+            const isPasswordValid = await bcrypt.compare(loginUserDto.password, existUser.password);
+            if (!isPasswordValid) throw new HttpException("Invalid password", HttpStatus.UNAUTHORIZED);
+
             const token = await this.jwtService.signAsync({
-                id: existUser.id
+                id: existUser.id,
+                email: existUser.email,
+                role: existUser.role
             })
 
             return {
@@ -52,7 +57,8 @@ export class AuthService {
               lastName: createUserDto.lastname,
               email: createUserDto.email,
               password: createUserDto.password,
-              phone: createUserDto.phone
+              phone: createUserDto.phone,
+              role: createUserDto.role
             }
           })
           delete user.password

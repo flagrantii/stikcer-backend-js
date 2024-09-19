@@ -1,47 +1,47 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
-import { NextFunction, Request, Response } from 'express';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
 import { DatabaseService } from 'src/database/database.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
-export class Authenticated implements NestMiddleware {
+export class AuthMiddleware implements NestMiddleware {
     constructor(
-        private jwtService: JwtService,
-        private databaseService: DatabaseService
-    ) { }
+        private databaseService: DatabaseService,
+        private jwtService: JwtService
+    ) {}
 
     async use(req: Request, res: Response, next: NextFunction) {
-        const token = req.cookies['access_token'];
+        const authHeader = req.headers.authorization;
 
-        if (!token) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Unauthorized' 
-            });
+        if (!authHeader) {
+            throw new UnauthorizedException('No token provided');
+        }
+
+        const [bearer, token] = authHeader.split(' ');
+
+        if (bearer !== 'Bearer' || !token) {
+            throw new UnauthorizedException('Invalid token format');
         }
 
         try {
-            const decoded = this.jwtService.verify(token);
+            const payload = this.jwtService.verify(token);
             const user = await this.databaseService.user.findUnique({
-                where: {
-                    id: decoded.id
-                },
-            })
+                where: { id: payload.id }
+            });
+
+            if (!user) {
+                throw new UnauthorizedException('User not found');
+            }
+
             delete user.password;
-
-            // set user data into req
-            req['user'] = user;
-
-            // logger
-            const date = new Date()
-            console.log(date.toLocaleDateString(), date.toLocaleTimeString(), { id: user.id, email: user.email })
+            req['user'] = {
+                ...user,
+                role: user.role
+            }
 
             next();
         } catch (err) {
-            return res.status(401).json({
-                success: false,
-                message: 'Unauthorized'
-            });
+            throw new UnauthorizedException('Invalid token');
         }
     }
 }
