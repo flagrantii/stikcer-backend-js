@@ -35,7 +35,7 @@ export class UsersController {
     @Req() req: Request,
     @Res() res: Response
   ) {
-    const { address, err } = await this.usersService.FindUserAddressById(req['user'].id)
+    const { address, err } = await this.usersService.FindAddressByUserId(req['user'].id)
     if (err !== null) {
       return res.status(400).json({
         success: false,
@@ -71,34 +71,13 @@ export class UsersController {
     }
   }
 
-  @Get("me/address/:addressId")
-  async GetAddressById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('addressId') addressId: string
-  ) {
-    const { address, err } = await this.usersService.FindAddressById(+addressId)
-    if (err !== null) {
-      return res.status(400).json({
-        success: false,
-        message: err
-      })
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: address
-      })
-    }
-  }
-
-  @Patch("me/address/:addressId")
+  @Patch("me/address")
   async UpdateAddressById(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('addressId') addressId: string,
     @Body() updateAddressDto: UpdateAddressDto
   ) {
-    const { address, err } = await this.usersService.UpdateAddressById(+addressId, updateAddressDto, req)
+    const { address, err } = await this.usersService.UpdateAddressByUserId(req['user'].id, updateAddressDto, req)
     if (err !== null) {
       return res.status(400).json({
         success: false,
@@ -112,13 +91,12 @@ export class UsersController {
     }
   }
 
-  @Delete("me/address/:addressId")
+  @Delete("me/address")
   async DeleteAddress(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('addressId') addressId: string
   ) {
-    const { err } = await this.usersService.DeleteAddressById(+addressId, req['user'].id)
+    const { err } = await this.usersService.DeleteAddressByUserId(req['user'].id, req)
     if (err !== null) {
       return res.status(400).json({
         success: false,
@@ -133,8 +111,11 @@ export class UsersController {
   }
 
   @Get()
-  async GetAllUsers(@Res() res: Response) {
-    const { users, err } = await this.usersService.FindAllUsers();
+  async GetAllUsers(
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    const { users, err } = await this.usersService.FindAllUsers(req);
     if (err !== null) {
       switch (err) {
         case "not found any user":
@@ -254,11 +235,10 @@ export class UsersController {
 
   @Get(':userId/address')
   async GetUserAddress(
-    @Req() req: Request,
     @Res() res: Response,
     @Param('id') id: string
   ) {
-    const { address, err } = await this.usersService.FindUserAddressById(+id);
+    const { address, err } = await this.usersService.FindAddressByUserId(+id);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
@@ -284,13 +264,12 @@ export class UsersController {
     }
   }
 
-  @Get('address/:addressId')
+  @Get(':userId/address')
   async GetUserAddressById(
-    @Req() req: Request,
     @Res() res: Response,
-    @Param('addressId') addressId: string
+    @Param('id') id: string
   ) {
-    const { address, err } = await this.usersService.FindAddressById(+addressId);
+    const { address, err } = await this.usersService.FindAddressByUserId(+id);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
@@ -313,14 +292,14 @@ export class UsersController {
     }
   }
 
-  @Patch('address/:addressId')
+  @Patch(':userId/address')
   async UpdateUserAddressById(
     @Req() req: Request,
     @Res() res: Response,
     @Param('addressId') addressId: string,
     @Body() updateAddressDto: UpdateAddressDto
   ) {
-    const { address, err } = await this.usersService.UpdateAddressById(+addressId, updateAddressDto, req);
+    const { address, err } = await this.usersService.UpdateAddressByUserId(+addressId, updateAddressDto, req);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
@@ -343,13 +322,13 @@ export class UsersController {
     }
   }
 
-  @Delete('address/:addressId')
+  @Delete(':userId/address')
   async DeleteUserAddressById(
     @Req() req: Request,
     @Res() res: Response,
     @Param('addressId') addressId: string
   ) {
-    const { err } = await this.usersService.DeleteAddressById(+addressId, req['user'].id);
+    const { err } = await this.usersService.DeleteAddressByUserId(+addressId, req);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
