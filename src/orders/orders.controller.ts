@@ -3,6 +3,7 @@ import { OrdersService } from './orders.service';
 import { Response } from 'express';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order } from '@prisma/client';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -41,7 +42,7 @@ export class OrdersController {
 
     switch (userRole) {
       case 1:
-        ({ orders, err } = await this.ordersService.FindAllOrders())
+        ({ orders, err } = await this.ordersService.FindAllOrders(req['user']))
         break;
       case 2:
         ({ orders, err } = await this.ordersService.FindOwnOrders(req['user'].id))
@@ -71,6 +72,59 @@ export class OrdersController {
     @Param('id') id: number
   ) {
     const { order, err } = await this.ordersService.FindOrderById(id, req);
+    if (err !== null) {
+      let statusCode: number
+      switch (err) {
+        case "you are not authorized to access this order":
+          statusCode = 401
+          break;
+        case "not found this order":
+          statusCode = 404
+          break;
+        default:
+          statusCode = 500
+      }
+
+      return res.status(statusCode).json({
+        success: false,
+        message: err
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: order
+    })
+  }
+
+  @Get('user/:id')
+  async GetOrdersByUserId(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: number
+  ) {
+    const { orders, err } = await this.ordersService.FindOwnOrders(id);
+    if (err !== null) {
+      return res.status(500).json({
+        success: false,
+        message: err
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: orders
+    })
+  }
+
+  @Patch(':id')
+  async UpdateOrderById(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: number,
+    @Body() updateOrderDto: UpdateOrderDto
+  ) {
+    const { order, err } = await this.ordersService.UpdateOrderById(id, updateOrderDto, req['user']);
     if (err !== null) {
       let statusCode: number
       switch (err) {

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Order } from '@prisma/client';
+import { Order, User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import * as uuid from 'uuid'
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -64,8 +65,14 @@ export class OrdersService {
     }
   }
 
-  async FindAllOrders(): Promise<{ orders: Order[], err: string }> {
+  async FindAllOrders(user: User): Promise<{ orders: Order[], err: string }> {
     try {
+      if (user.role !== "ADMIN") {
+        return {
+          orders: null,
+          err: "you are not authorized to access this order"
+        }
+      }
       const orders = await this.databaseService.order.findMany({
         include: {
           orderLines: true
@@ -156,6 +163,59 @@ export class OrdersService {
         err: err.message
       }
     }  
+  }
+
+  async UpdateOrderById(id: number, updateOrderDto: UpdateOrderDto, req: Request): Promise<{ order: Order, err: string }> {
+    try {
+      const order = await this.databaseService.order.findUnique({
+        where: {
+          id
+        }
+      })
+      if (req['user'].role === "ADMIN") {
+        if (!order) {
+          return {
+            order: null,
+            err: "not found this order"
+          }
+        }
+        const updatedOrder = await this.databaseService.order.update({
+          where: {
+            id
+          },
+          data: updateOrderDto
+        })
+        return {
+          order: updatedOrder,
+          err: null
+        }
+      }
+      else if (req['user'].role === "USER") {
+        if (order && order.userId === req['user'].id) {
+          const updatedOrder = await this.databaseService.order.update({
+            where: {
+              id
+            },
+            data: updateOrderDto
+          })
+          return {
+            order: updatedOrder,
+            err: null
+          }
+        } else {
+          return {
+            order: null,
+            err: "you are not authorized to access this order"
+          }
+        }
+      }
+    } catch (err) {
+      console.log("Error: ", err)
+      return {
+        order: null,
+        err: err.message
+      }
+    }
   }
 
   async DeleteOrderById(id: number, req: Request): Promise<{ err: string }> {
