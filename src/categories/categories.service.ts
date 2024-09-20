@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { ProductCategory } from '@prisma/client';
+import { ProductCategory, User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class CategoriesService {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async InsertCategory(createCategoryDto: CreateCategoryDto): Promise<{ category: ProductCategory, err: string }> {
+  async InsertCategory(createCategoryDto: CreateCategoryDto, user: User): Promise<{ category: ProductCategory, err: string }> {
     try {
+      if (user.role !== "ADMIN") {
+        return {
+          category: null,
+          err: "You are not authorized to access this category"
+        }
+      }
+
       const category = await this.databaseService.productCategory.create({
         data: createCategoryDto
       })
@@ -72,8 +79,15 @@ export class CategoriesService {
     }
   }
 
-  async UpdateCategoryById(id: number, updateCategoryDto: UpdateCategoryDto): Promise<{ category: ProductCategory, err: string }> {
+  async UpdateCategoryById(id: number, updateCategoryDto: UpdateCategoryDto, user: User): Promise<{ category: ProductCategory, err: string }> {
     try {
+      if (user.role !== "ADMIN") {
+        return {
+          category: null,
+          err: "You are not authorized to access this category"
+        }
+      }
+
       const existed = await this.databaseService.productCategory.findUnique({
         where: {
           id
@@ -107,8 +121,14 @@ export class CategoriesService {
     }
   }
 
-  async DeleteCategoryById(id: number): Promise<{ err: string }> {
+  async DeleteCategoryById(id: number, user: User): Promise<{ err: string }> {
     try {
+      if (user.role !== "ADMIN") {
+        return {
+          err: "You are not authorized to access this category"
+        }
+      }
+
       const existed = await this.databaseService.productCategory.findUnique({
         where: {
           id

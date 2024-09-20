@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Req } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -11,9 +11,10 @@ export class CategoriesController {
   @Post()
   async CreateCategory(
     @Res() res: Response,
+    @Req() req: Request,
     @Body() createCategoryDto: CreateCategoryDto
   ) {
-    const { category, err } = await this.categoriesService.InsertCategory(createCategoryDto);
+    const { category, err } = await this.categoriesService.InsertCategory(createCategoryDto, req['user']);
     if (err !== null) {
       return res.status(500).json({
         success: false,
@@ -78,9 +79,10 @@ export class CategoriesController {
   async UpdateCategoryById(
     @Res() res: Response,
     @Param('id') id: string, 
-    @Body() updateCategoryDto: UpdateCategoryDto
+    @Body() updateCategoryDto: UpdateCategoryDto,
+    @Req() req: Request
   ) {
-    const { category, err } = await this.categoriesService.UpdateCategoryById(+id, updateCategoryDto);
+    const { category, err } = await this.categoriesService.UpdateCategoryById(+id, updateCategoryDto, req['user']);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
@@ -106,9 +108,10 @@ export class CategoriesController {
   @Delete(':id')
   async DeleteCategoryById(
     @Res() res: Response,
-    @Param('id') id: string
+    @Param('id') id: string,
+    @Req() req: Request
   ) {
-    const { err } = await this.categoriesService.DeleteCategoryById(+id);
+    const { err } = await this.categoriesService.DeleteCategoryById(+id, req['user']);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
