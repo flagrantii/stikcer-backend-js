@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from '@prisma/client';
+import { Product, User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 import * as uuid from 'uuid'
 
@@ -9,7 +9,7 @@ import * as uuid from 'uuid'
 export class ProductsService {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async InsertProduct(createProductDto: CreateProductDto): Promise<{ product: Product, err: string }> {
+  async InsertProduct(createProductDto: CreateProductDto, user: User): Promise<{ product: Product, err: string }> {
     try {
       const productId = parseInt(uuid.v4().replace(/-/g, ''), 16);
   
@@ -18,7 +18,7 @@ export class ProductsService {
           data: {
             id: productId,
             categoryId: createProductDto.categoryId,
-            userId: createProductDto.userId,
+            userId: user.id,
             size: createProductDto.size,
             material: createProductDto.material,
             shape: createProductDto.shape,
@@ -39,7 +39,7 @@ export class ProductsService {
             id: fileId,
             productId: product.id,
             categoryId: createProductDto.categoryId,
-            userId: createProductDto.userId,
+            userId: user.id,
             url: createProductDto.fileUrl,
             type: createProductDto.fileType,
             isPurchased: false,
@@ -63,9 +63,24 @@ export class ProductsService {
   }
   
 
-  async FindAllProducts(): Promise<{ products: Product[], err: string }> {
+  async FindAllProducts(user: User): Promise<{ products: Product[], err: string }> {
     try {
-      const products = await this.databaseService.product.findMany({
+      if (user.role === "ADMIN") {
+        const products = await this.databaseService.product.findMany({
+          include: {
+            category: true
+          }
+        })
+  
+        return {
+          products,
+          err: null
+        }
+      } else if (user.role === "USER") {
+        const products = await this.databaseService.product.findMany({
+          where: {
+            userId: user.id
+          },
         include: {
           category: true
         }
@@ -73,7 +88,8 @@ export class ProductsService {
 
       return {
         products,
-        err: null
+          err: null
+        }
       }
     } catch (err) {
       console.log("Error: ", err)
@@ -84,38 +100,98 @@ export class ProductsService {
     }
   }
 
-  async FindProductById(id: number): Promise<{ product: Product, err: string }> {
+  async FindProductById(id: number, user: User): Promise<{ product: Product, err: string }> {
     try {
       const product = await this.databaseService.product.findUnique({
-        where: {
-          id
-        },
-        include: {
-          category: true
-        }
-      })
+        where: { id },
+        include: { category: true }
+      });
 
       if (!product) {
-        return {
-          product: null,
-          err: "not found this product"
-        }
+        return { product: null, err: "not found this product" };
       }
 
-      return {
-        product,
-        err: null
+      if (user.role === "USER" && product.userId !== user.id) {
+        return { product: null, err: "You are not authorized to access this product" };
+      }
+
+      return { product, err: null };
+    } catch (err) {
+      console.log("Error: ", err);
+      return { product: null, err: err.message };
+    }  
+  }
+
+  async FindAllProductsByUserId(userId: number, user: User): Promise<{ products: Product[], err: string }> {
+    try {
+      if (user.role === "ADMIN") {
+        const products = await this.databaseService.product.findMany({
+          where: {
+            userId
+          }
+        })
+
+        return {
+          products,
+          err: null
+        }
+      } else if (user.role === "USER") {
+        return {
+          products : [],
+          err: "You are not authorized to access this product"
+        }
       }
     } catch (err) {
       console.log("Error: ", err)
       return {
-        product: null,
+        products: null,
         err: err.message
       }
-    }  
+    }
   }
 
-  async UpdateProductById(id: number, updateProductDto: UpdateProductDto): Promise<{ product: Product, err: string }> {
+  async FindAllProductsByCategoryId(categoryId: number, user: User): Promise<{ products: Product[], err: string }> {
+    try {
+      if (user.role === "ADMIN") {
+      const products = await this.databaseService.product.findMany({
+        where: {
+          categoryId
+        },
+          include: {
+          category: true
+        }
+      })
+
+        return {
+          products,
+          err: null
+        }
+      } else if (user.role === "USER") {
+        const products = await this.databaseService.product.findMany({
+          where: {
+            categoryId,
+            userId: user.id
+          },
+          include: {
+            category: true
+          }
+        })
+        return {
+          products,
+          err: null
+        }
+      }
+    } catch (err) {
+      console.log("Error: ", err)
+      return {
+        products: null,
+        err: err.message
+      }
+    }
+  }
+
+
+  async UpdateProductById(id: number, updateProductDto: UpdateProductDto, user: User): Promise<{ product: Product, err: string }> {
     try {
       const existed = await this.databaseService.product.findUnique({
         where: {
@@ -130,7 +206,8 @@ export class ProductsService {
         }
       }
 
-      const product = await this.databaseService.product.update({
+      if (user.role === "ADMIN") {
+        const product = await this.databaseService.product.update({
         where: {
           id
         },
@@ -139,9 +216,27 @@ export class ProductsService {
 
       return {
         product,
-        err: null
-      }
+          err: null
+        }
+      } else if (user.role === "USER") {
+        if (existed.userId !== user.id) {
+          return {
+            product: null,
+            err: "You are not authorized to access this product"
+          }
+        }
+        const product = await this.databaseService.product.update({
+          where: {
+            id
+          },
+          data: updateProductDto
+        })
 
+        return {
+          product,
+          err: null
+        }
+      }
     } catch (err) {
       console.log("Error: ", err)
       return {
@@ -151,7 +246,7 @@ export class ProductsService {
     }  
   }
 
-  async DeleteProductById(id: number): Promise<{ err: string }> {
+  async DeleteProductById(id: number, user: User): Promise<{ err: string }> {
     try {
       const existed = await this.databaseService.product.findUnique({
         where: {
@@ -165,14 +260,32 @@ export class ProductsService {
         }
       }
 
-      await this.databaseService.product.delete({
+      if (user.role === "ADMIN") {
+        await this.databaseService.product.delete({
         where: {
           id
         }
       })
 
-      return {
-        err: null
+        return {
+          err: null
+        }
+      } else if (user.role === "USER") {
+        if (existed.userId !== user.id) {
+          return {
+            err: "You are not authorized to access this product"
+          }
+        }
+
+        await this.databaseService.product.delete({
+          where: {
+            id
+          }
+        })
+
+        return {
+          err: null
+        }
       }
     } catch (err) {
       console.log("Error: ", err)

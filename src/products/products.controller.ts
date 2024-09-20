@@ -11,9 +11,10 @@ export class ProductsController {
   @Post()
   async CreateProduct(
     @Res() res: Response,
+    @Req() req: Request,
     @Body() createProductDto: CreateProductDto
   ) {
-    const { product, err } = await this.productsService.InsertProduct(createProductDto)
+    const { product, err } = await this.productsService.InsertProduct(createProductDto, req['user'])
     if (err !== null) {
       return res.status(500).json({
         success: false,
@@ -30,8 +31,9 @@ export class ProductsController {
   @Get()
   async GetAllProducts(
     @Res() res: Response,
+    @Req() req: Request
   ) {
-    const { products, err} = await this.productsService.FindAllProducts();
+    const { products, err} = await this.productsService.FindAllProducts(req['user']);
     if (err !== null) {
       return res.status(500).json({
         success: false,
@@ -46,12 +48,53 @@ export class ProductsController {
     })
   }
 
+  @Get('category/:categoryId')
+  async FindAllProductsByCategoryId(
+    @Res() res: Response,
+    @Param('categoryId') categoryId: string,
+    @Req() req: Request
+  ) {
+    const { products, err } = await this.productsService.FindAllProductsByCategoryId(+categoryId, req['user']);
+    if (err !== null) {
+      return res.status(500).json({
+        success: false,
+        message: err
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: products
+    })
+  }
+
+  @Get('user/:userId')
+  async FindAllProductsByUserId(
+    @Res() res: Response,
+    @Param('userId') userId: string,
+    @Req() req: Request
+  ) {
+    const { products, err } = await this.productsService.FindAllProductsByUserId(+userId, req['user']);
+    if (err !== null) {
+      return res.status(500).json({
+        success: false,
+        message: err
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: products
+    })
+  }
+
   @Get(':id')
   async FindProductById(
     @Res() res: Response,
-    @Param('id') id: string
+    @Param('id') id: string,
+    @Req() req: Request
   ) {
-    const { product, err } = await this.productsService.FindProductById(+id);
+    const { product, err } = await this.productsService.FindProductById(+id, req['user']);
     if (err !== null) {
       let statusCode: number
       switch (err) {
@@ -78,9 +121,10 @@ export class ProductsController {
   async UpdateProductById(
     @Res() res: Response,
     @Param('id') id: string, 
-    @Body() updateProductDto: UpdateProductDto
+    @Body() updateProductDto: UpdateProductDto,
+    @Req() req: Request
   ) {
-    const { product, err } = await this.productsService.UpdateProductById(+id, updateProductDto);
+    const { product, err } = await this.productsService.UpdateProductById(+id, updateProductDto, req['user']);
     if (err !== null) {
       let statusCode: number
       switch (err) {
@@ -106,9 +150,10 @@ export class ProductsController {
   @Delete(':id')
   async DeleteProductById(
     @Res() res: Response,
-    @Param('id') id: string
+    @Param('id') id: string,
+    @Req() req: Request
   ) {
-    const { err } = await this.productsService.DeleteProductById(+id);
+    const { err } = await this.productsService.DeleteProductById(+id, req['user']);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
