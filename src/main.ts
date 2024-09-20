@@ -11,7 +11,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // listen on port 3000 and set global prefix
-  app.setGlobalPrefix("api/v1");
+  app.setGlobalPrefix('api/v1');
   await app.listen(3000);
 }
 bootstrap();

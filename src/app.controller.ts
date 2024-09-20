@@ -6,7 +6,10 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  healthcheck(): Object {
-    return this.appService.healthcheck();
+  healthcheck(): { server: string; version: string } {
+    return {
+      server: 'ecommerce-api-nestjs',
+      version: '1.0.0',
+    };
   }
 }

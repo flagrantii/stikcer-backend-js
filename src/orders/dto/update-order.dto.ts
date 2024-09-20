@@ -1,3 +1,3 @@
 export class UpdateOrderDto {
-    status: string
+  status: string;
 }

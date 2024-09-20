@@ -1,4 +1,10 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod, ValidationPipe } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+  ValidationPipe,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -19,13 +25,13 @@ import { AuthMiddleware } from './middleware/authenticated';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(), 
-    DatabaseModule, 
+    ConfigModule.forRoot(),
+    DatabaseModule,
     AuthModule,
     JwtModule,
-    UsersModule, 
-    ProductsModule, 
-    OrdersModule, 
+    UsersModule,
+    ProductsModule,
+    OrdersModule,
     CategoriesModule,
     FilesModule,
   ],
@@ -35,19 +41,18 @@ import { AuthMiddleware } from './middleware/authenticated';
     AuthMiddleware,
     {
       provide: APP_PIPE,
-      useClass: ValidationPipe
+      useClass: ValidationPipe,
     },
-    FilesService
+    FilesService,
   ],
 })
-
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
       .exclude(
         { path: 'auth/signin', method: RequestMethod.POST },
-        { path: 'auth/signup', method: RequestMethod.POST }
+        { path: 'auth/signup', method: RequestMethod.POST },
       )
       .forRoutes('*');
 
@@ -61,7 +66,7 @@ export class AppModule implements NestModule {
         { path: 'categories/:id', method: RequestMethod.DELETE },
         { path: 'products', method: RequestMethod.POST },
         { path: 'products/:id', method: RequestMethod.PATCH },
-        { path: 'products/:id', method: RequestMethod.DELETE }
+        { path: 'products/:id', method: RequestMethod.DELETE },
       );
 
     consumer
@@ -69,7 +74,7 @@ export class AppModule implements NestModule {
       .forRoutes(
         { path: 'users/me', method: RequestMethod.ALL },
         { path: 'users/me/address', method: RequestMethod.ALL },
-        { path: 'orders', method: RequestMethod.POST }
+        { path: 'orders', method: RequestMethod.POST },
       );
   }
 }

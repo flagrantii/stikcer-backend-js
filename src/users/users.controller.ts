@@ -1,141 +1,149 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Res,
+  Req,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Request, Response } from 'express';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
-import { register } from 'module';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
-  async GetProfile(
-    @Req() req: Request,
-    @Res() res: Response
-  ) {
-    const { user, err } = await this.usersService.FindUserProfile(req['user'].id)
+  async GetProfile(@Req() req: Request, @Res() res: Response) {
+    const { user, err } = await this.usersService.FindUserProfile(
+      req['user'].id,
+    );
     if (err !== null) {
       return res.status(400).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: user
-      })
+        data: user,
+      });
     }
   }
 
-  @Get("me/address")
-  async GetAddress(
-    @Req() req: Request,
-    @Res() res: Response
-  ) {
-    const { address, err } = await this.usersService.FindAddressByUserId(req['user'].id)
+  @Get('me/address')
+  async GetAddress(@Req() req: Request, @Res() res: Response) {
+    const { address, err } = await this.usersService.FindAddressByUserId(
+      req['user'].id,
+    );
     if (err !== null) {
       return res.status(400).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: address
-      })
+        data: address,
+      });
     }
   }
 
-  @Post("me/address")
+  @Post('me/address')
   async CreateAddress(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() createAddressDto: CreateAddressDto
+    @Body() createAddressDto: CreateAddressDto,
   ) {
-    createAddressDto.userId = req['user'].id
+    createAddressDto.userId = req['user'].id;
 
-    const { address, err } = await this.usersService.InsertAddress(createAddressDto)
+    const { address, err } =
+      await this.usersService.InsertAddress(createAddressDto);
     if (err !== null) {
       return res.status(500).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(201).json({
         success: true,
-        data: address
-      })
+        data: address,
+      });
     }
   }
 
-  @Patch("me/address")
+  @Patch('me/address')
   async UpdateAddressById(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() updateAddressDto: UpdateAddressDto
+    @Body() updateAddressDto: UpdateAddressDto,
   ) {
-    const { address, err } = await this.usersService.UpdateAddressByUserId(req['user'].id, updateAddressDto, req)
+    const { address, err } = await this.usersService.UpdateAddressByUserId(
+      req['user'].id,
+      updateAddressDto,
+      req,
+    );
     if (err !== null) {
       return res.status(400).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: address
-      })
+        data: address,
+      });
     }
   }
 
-  @Delete("me/address")
-  async DeleteAddress(
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    const { err } = await this.usersService.DeleteAddressByUserId(req['user'].id, req)
+  @Delete('me/address')
+  async DeleteAddress(@Req() req: Request, @Res() res: Response) {
+    const { err } = await this.usersService.DeleteAddressByUserId(
+      req['user'].id,
+      req,
+    );
     if (err !== null) {
       return res.status(400).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: {}
-      })
+        data: {},
+      });
     }
   }
 
   @Get()
-  async GetAllUsers(
-    @Req() req: Request,
-    @Res() res: Response
-  ) {
+  async GetAllUsers(@Req() req: Request, @Res() res: Response) {
     const { users, err } = await this.usersService.FindAllUsers(req);
     if (err !== null) {
       switch (err) {
-        case "not found any user":
+        case 'not found any user':
           return res.status(404).json({
             success: false,
             message: err,
-            data: []
-          })
+            data: [],
+          });
         default:
           return res.status(500).json({
             success: false,
             message: err,
-          })
+          });
       }
     } else {
       return res.status(200).json({
         success: true,
         amount: users.length,
-        data: users
-      })
+        data: users,
+      });
     }
   }
 
@@ -143,17 +151,21 @@ export class UsersController {
   async UpdateUserById(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('id') id: string, 
-    @Body() updateUserDto: UpdateUserDto
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
   ) {
-    const { user, err } = await this.usersService.UpdateUserById(+id, updateUserDto, req);
+    const { user, err } = await this.usersService.UpdateUserById(
+      +id,
+      updateUserDto,
+      req,
+    );
     if (err !== null) {
       let statusCode: number;
       switch (err) {
-        case "not found this user":
+        case 'not found this user':
           statusCode = 404;
           break;
-        case "you are not authorized to access this user":
+        case 'you are not authorized to access this user':
           statusCode = 401;
           break;
         default:
@@ -162,13 +174,13 @@ export class UsersController {
 
       return res.status(statusCode).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: user
-      })
+        data: user,
+      });
     }
   }
 
@@ -176,16 +188,16 @@ export class UsersController {
   async DeleteUserById(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     const { err } = await this.usersService.DeleteUserById(+id, req);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
-        case "not found this user":
+        case 'not found this user':
           statusCode = 404;
           break;
-        case "you are not authorized to access this user":
+        case 'you are not authorized to access this user':
           statusCode = 401;
           break;
         default:
@@ -194,13 +206,13 @@ export class UsersController {
 
       return res.status(statusCode).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: {}
-      })
+        data: {},
+      });
     }
   }
 
@@ -208,13 +220,13 @@ export class UsersController {
   async GetUserById(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('id') id: string
+    @Param('id') id: string,
   ) {
     const { user, err } = await this.usersService.FindUserProfile(+id);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
-        case "not found this user":
+        case 'not found this user':
           statusCode = 404;
           break;
         default:
@@ -223,29 +235,26 @@ export class UsersController {
 
       return res.status(statusCode).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: user
-      })
+        data: user,
+      });
     }
   }
 
   @Get(':userId/address')
-  async GetUserAddress(
-    @Res() res: Response,
-    @Param('id') id: string
-  ) {
+  async GetUserAddress(@Res() res: Response, @Param('id') id: string) {
     const { address, err } = await this.usersService.FindAddressByUserId(+id);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
-        case "not found this user":
+        case 'not found this user':
           statusCode = 404;
           break;
-        case "not found any address":
+        case 'not found any address':
           statusCode = 404;
           break;
         default:
@@ -254,26 +263,23 @@ export class UsersController {
 
       return res.status(statusCode).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: address
-      })
+        data: address,
+      });
     }
   }
 
   @Get(':userId/address')
-  async GetUserAddressById(
-    @Res() res: Response,
-    @Param('id') id: string
-  ) {
+  async GetUserAddressById(@Res() res: Response, @Param('id') id: string) {
     const { address, err } = await this.usersService.FindAddressByUserId(+id);
     if (err !== null) {
       let statusCode: number;
       switch (err) {
-        case "not found this address":
+        case 'not found this address':
           statusCode = 404;
           break;
         default:
@@ -282,13 +288,13 @@ export class UsersController {
 
       return res.status(statusCode).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: address
-      })
+        data: address,
+      });
     }
   }
 
@@ -297,13 +303,17 @@ export class UsersController {
     @Req() req: Request,
     @Res() res: Response,
     @Param('addressId') addressId: string,
-    @Body() updateAddressDto: UpdateAddressDto
+    @Body() updateAddressDto: UpdateAddressDto,
   ) {
-    const { address, err } = await this.usersService.UpdateAddressByUserId(+addressId, updateAddressDto, req);
+    const { address, err } = await this.usersService.UpdateAddressByUserId(
+      +addressId,
+      updateAddressDto,
+      req,
+    );
     if (err !== null) {
       let statusCode: number;
       switch (err) {
-        case "not found this address":
+        case 'not found this address':
           statusCode = 404;
           break;
         default:
@@ -312,13 +322,13 @@ export class UsersController {
 
       return res.status(statusCode).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: address
-      })
+        data: address,
+      });
     }
   }
 
@@ -326,13 +336,16 @@ export class UsersController {
   async DeleteUserAddressById(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('addressId') addressId: string
+    @Param('addressId') addressId: string,
   ) {
-    const { err } = await this.usersService.DeleteAddressByUserId(+addressId, req);
+    const { err } = await this.usersService.DeleteAddressByUserId(
+      +addressId,
+      req,
+    );
     if (err !== null) {
       let statusCode: number;
       switch (err) {
-        case "not found this address":
+        case 'not found this address':
           statusCode = 404;
           break;
         default:
@@ -341,15 +354,13 @@ export class UsersController {
 
       return res.status(statusCode).json({
         success: false,
-        message: err
-      })
+        message: err,
+      });
     } else {
       return res.status(200).json({
         success: true,
-        data: {}
-      })
+        data: {},
+      });
     }
   }
-
 }
-

@@ -2,29 +2,30 @@ import { Injectable } from '@nestjs/common';
 import { Order, User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import * as uuid from 'uuid'
+import * as uuid from 'uuid';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async InsertOrderWithLines(createOrderDto: CreateOrderDto): Promise<{ order: Order, err: string }> {
+  async InsertOrderWithLines(
+    createOrderDto: CreateOrderDto,
+  ): Promise<{ order: Order; err: string }> {
     try {
-      const orderId: number = parseInt(uuid.v4().split('-').join(''), 16)
+      const orderId: number = parseInt(uuid.v4().split('-').join(''), 16);
       return this.databaseService.$transaction(async (prisma) => {
-
         //calcuilate subtotal
-        let subTotal = 0
+        let subTotal = 0;
         for (let i = 0; i < createOrderDto.items.length; i++) {
-          const item = createOrderDto.items[i]
+          const item = createOrderDto.items[i];
           const product = await prisma.product.findUnique({
             where: {
-              id: item.productId
-            }
-          })
+              id: item.productId,
+            },
+          });
 
-          subTotal += product.unitPrice * product.amount
+          subTotal += product.unitPrice * product.amount;
         }
 
         //create order
@@ -36,211 +37,219 @@ export class OrdersService {
             shippingFee: createOrderDto.shippingFee,
             shippingMethod: createOrderDto.shippingMethod,
             paymentId: createOrderDto.paymentId,
-            status: createOrderDto.status
-          }
-        })
+            status: createOrderDto.status,
+          },
+        });
 
         //create order lines
         for (let i = 0; i < createOrderDto.items.length; i++) {
-          const item = createOrderDto.items[i]
+          const item = createOrderDto.items[i];
           await prisma.orderLine.createMany({
             data: {
               orderId: orderId,
-              productId: item.productId
-            }
-          })
+              productId: item.productId,
+            },
+          });
         }
 
-        return { 
-          order: createdOrder, 
-          err: null 
-        }
-      })
+        return {
+          order: createdOrder,
+          err: null,
+        };
+      });
     } catch (err) {
-      console.log("Error: ", err)
-      return { 
-        order: null, 
-        err 
-      }
+      console.log('Error: ', err);
+      return {
+        order: null,
+        err,
+      };
     }
   }
 
-  async FindAllOrders(user: User): Promise<{ orders: Order[], err: string }> {
+  async FindAllOrders(user: User): Promise<{ orders: Order[]; err: string }> {
     try {
-      if (user.role !== "ADMIN") {
+      if (user.role !== 'ADMIN') {
         return {
           orders: null,
-          err: "you are not authorized to access this order"
-        }
+          err: 'you are not authorized to access this order',
+        };
       }
       const orders = await this.databaseService.order.findMany({
         include: {
-          orderLines: true
-        }
-      })
+          orderLines: true,
+        },
+      });
 
       return {
         orders,
-        err: null
-      }
+        err: null,
+      };
     } catch (err) {
-      console.log("Error: ", err)
+      console.log('Error: ', err);
       return {
         orders: null,
-        err
-      }
+        err,
+      };
     }
   }
 
-  async FindOrdersByUserId(userId: number, user: User): Promise<{ orders: Order[], err: string }> {
+  async FindOrdersByUserId(
+    userId: number,
+    user: User,
+  ): Promise<{ orders: Order[]; err: string }> {
     try {
-      if (user.role === "ADMIN") {
+      if (user.role === 'ADMIN') {
         const orders = await this.databaseService.order.findMany({
           where: {
-            userId
+            userId,
           },
           include: {
-            orderLines: true
-          }
-        })
+            orderLines: true,
+          },
+        });
         return {
           orders,
-          err: null
-        }
-      }
-      else if (user.role === "USER") {
+          err: null,
+        };
+      } else if (user.role === 'USER') {
         if (userId !== user.id) {
           return {
             orders: null,
-            err: "you are not authorized to access this order"
-          }
+            err: 'you are not authorized to access this order',
+          };
         }
         const orders = await this.databaseService.order.findMany({
           where: {
-          userId
-        },
-        include: {
-            orderLines: true
-          }
-        })
+            userId,
+          },
+          include: {
+            orderLines: true,
+          },
+        });
         return {
           orders,
-          err: null
-        }
+          err: null,
+        };
       }
 
       return {
         orders: null,
-        err: "you are not authorized to access this order"
-      }
+        err: 'you are not authorized to access this order',
+      };
     } catch (err) {
-      console.log("Error: ", err)
+      console.log('Error: ', err);
       return {
         orders: null,
-        err
-      }
+        err,
+      };
     }
   }
 
-  async FindOrderById(id: number, req: Request): Promise<{ order: Order, err: string }> {
+  async FindOrderById(
+    id: number,
+    req: Request,
+  ): Promise<{ order: Order; err: string }> {
     try {
       const order = await this.databaseService.order.findUnique({
         where: {
-          id
+          id,
         },
         include: {
-          orderLines: true
-        }
-      })
+          orderLines: true,
+        },
+      });
 
       // role: admin
-      if (req['user'].role === "ADMIN") {
+      if (req['user'].role === 'ADMIN') {
         if (!order) {
           return {
             order: null,
-            err: "not found this order"
-          }
+            err: 'not found this order',
+          };
         }
 
         return {
           order,
-          err: null
-        }
-      } 
+          err: null,
+        };
+      }
       // role: user
-      else if (req['user'].role=== "USER") {
+      else if (req['user'].role === 'USER') {
         // ownership validation
         if (order && order.userId === req['user'].id) {
           return {
             order,
-            err: null
-          }
+            err: null,
+          };
         } else {
           return {
             order: null,
-            err: "you are not authorized to access this order"
-          }
+            err: 'you are not authorized to access this order',
+          };
         }
       }
     } catch (err) {
-      console.log("Error: ", err)
+      console.log('Error: ', err);
       return {
         order: null,
-        err: err.message
-      }
-    }  
+        err: err.message,
+      };
+    }
   }
 
-  async UpdateOrderById(id: number, updateOrderDto: UpdateOrderDto, req: Request): Promise<{ order: Order, err: string }> {
+  async UpdateOrderById(
+    id: number,
+    updateOrderDto: UpdateOrderDto,
+    req: Request,
+  ): Promise<{ order: Order; err: string }> {
     try {
       const order = await this.databaseService.order.findUnique({
         where: {
-          id
-        }
-      })
-      if (req['user'].role === "ADMIN") {
+          id,
+        },
+      });
+      if (req['user'].role === 'ADMIN') {
         if (!order) {
           return {
             order: null,
-            err: "not found this order"
-          }
+            err: 'not found this order',
+          };
         }
         const updatedOrder = await this.databaseService.order.update({
           where: {
-            id
+            id,
           },
-          data: updateOrderDto
-        })
+          data: updateOrderDto,
+        });
         return {
           order: updatedOrder,
-          err: null
-        }
-      }
-      else if (req['user'].role === "USER") {
+          err: null,
+        };
+      } else if (req['user'].role === 'USER') {
         if (order && order.userId === req['user'].id) {
           const updatedOrder = await this.databaseService.order.update({
             where: {
-              id
+              id,
             },
-            data: updateOrderDto
-          })
+            data: updateOrderDto,
+          });
           return {
             order: updatedOrder,
-            err: null
-          }
+            err: null,
+          };
         } else {
           return {
             order: null,
-            err: "you are not authorized to access this order"
-          }
+            err: 'you are not authorized to access this order',
+          };
         }
       }
     } catch (err) {
-      console.log("Error: ", err)
+      console.log('Error: ', err);
       return {
         order: null,
-        err: err.message
-      }
+        err: err.message,
+      };
     }
   }
 
@@ -248,52 +257,52 @@ export class OrdersService {
     try {
       const order = await this.databaseService.order.findUnique({
         where: {
-          id
-        }
-      })
+          id,
+        },
+      });
 
       // role: admin
-      if (req['user'].role === "ADMIN") {
+      if (req['user'].role === 'ADMIN') {
         if (!order) {
           return {
-            err: "not found this order"
-          }
+            err: 'not found this order',
+          };
         }
 
         await this.databaseService.order.delete({
           where: {
-            id
-          }
-        })
+            id,
+          },
+        });
 
         return {
-          err: null
-        }
+          err: null,
+        };
       }
       // role: user
-      else if (req['user'].role === "USER") {
+      else if (req['user'].role === 'USER') {
         // ownership validation
         if (order && order.userId === req['user'].id) {
           await this.databaseService.order.delete({
             where: {
-              id
-            }
-          })
+              id,
+            },
+          });
 
           return {
-            err: null
-          }
+            err: null,
+          };
         } else {
           return {
-            err: "you are not authorized to access this order"
-          }
+            err: 'you are not authorized to access this order',
+          };
         }
       }
     } catch (err) {
-      console.log("Error: ", err)
+      console.log('Error: ', err);
       return {
-        err: err.message
-      }
-    }  
+        err: err.message,
+      };
+    }
   }
 }
