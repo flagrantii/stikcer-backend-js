@@ -92,20 +92,46 @@ export class OrdersService {
     }
   }
 
-  async FindOwnOrders(userId: number): Promise<{ orders: Order[], err: string }> {
+  async FindOrdersByUserId(userId: number, user: User): Promise<{ orders: Order[], err: string }> {
     try {
-      const orders = await this.databaseService.order.findMany({
-        where: {
+      if (user.role === "ADMIN") {
+        const orders = await this.databaseService.order.findMany({
+          where: {
+            userId
+          },
+          include: {
+            orderLines: true
+          }
+        })
+        return {
+          orders,
+          err: null
+        }
+      }
+      else if (user.role === "USER") {
+        if (userId !== user.id) {
+          return {
+            orders: null,
+            err: "you are not authorized to access this order"
+          }
+        }
+        const orders = await this.databaseService.order.findMany({
+          where: {
           userId
         },
         include: {
-          orderLines: true
+            orderLines: true
+          }
+        })
+        return {
+          orders,
+          err: null
         }
-      })
+      }
 
       return {
-        orders,
-        err: null
+        orders: null,
+        err: "you are not authorized to access this order"
       }
     } catch (err) {
       console.log("Error: ", err)

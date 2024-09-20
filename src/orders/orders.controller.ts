@@ -38,14 +38,14 @@ export class OrdersController {
     let orders: Order[]
     let err: string
 
-    const userRole: number = req['user'].role
+    const userRole: string = req['user'].role
 
     switch (userRole) {
-      case 1:
+      case "ADMIN":
         ({ orders, err } = await this.ordersService.FindAllOrders(req['user']))
         break;
-      case 2:
-        ({ orders, err } = await this.ordersService.FindOwnOrders(req['user'].id))
+      case "USER":
+        ({ orders, err } = await this.ordersService.FindOrdersByUserId(req['user'].id, req['user']))
         break;
       default:
         err = "invalid user role"
@@ -103,7 +103,7 @@ export class OrdersController {
     @Res() res: Response,
     @Param('id') id: number
   ) {
-    const { orders, err } = await this.ordersService.FindOwnOrders(id);
+    const { orders, err } = await this.ordersService.FindOrdersByUserId(id, req['user']);
     if (err !== null) {
       return res.status(500).json({
         success: false,
