@@ -51,31 +51,26 @@ export class AuthService {
     }
   }
 
-  async register(createUserDto: CreateUserDto): Promise<{ user: User; token: string }> {
-    this.logger.log(`Attempting to register user with email: ${createUserDto.email}`);
+  async register(registerDto: CreateUserDto): Promise<User> {
+    this.logger.log(`Attempting to register new user: ${registerDto.email}`);
     try {
       const existingUser = await this.databaseService.user.findUnique({
-        where: { email: createUserDto.email },
+        where: { email: registerDto.email },
       });
       if (existingUser) {
         throw new BadRequestException('User already exists');
       }
-
-      const hashedPassword: string = await bcrypt.hash(createUserDto.password, 10);
-      const user = await this.databaseService.user.create({
+      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      const newUser = await this.databaseService.user.create({
         data: {
-          ...createUserDto,
+          ...registerDto,
           password: hashedPassword,
         },
       });
-      const token = await this.jwtService.signAsync({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      });
+      const { password, ...result } = newUser;
       return {
-        token: token,
-        user: user,
+        ...result,
+        password: null,
       };
     } catch (error) {
       this.logger.error(`Failed to register user: ${error.message}`, error.stack);

@@ -64,21 +64,8 @@ export class AppModule implements NestModule {
       .apply(AuthorizeAdmin)
       .forRoutes(
         { path: 'users', method: RequestMethod.GET },
-        { path: 'users/:id', method: RequestMethod.ALL },
-        { path: 'categories', method: RequestMethod.POST },
-        { path: 'categories/:id', method: RequestMethod.PATCH },
-        { path: 'categories/:id', method: RequestMethod.DELETE },
-        { path: 'products', method: RequestMethod.POST },
-        { path: 'products/:id', method: RequestMethod.PATCH },
-        { path: 'products/:id', method: RequestMethod.DELETE },
       );
 
-    consumer
-      .apply(AuthorizeUser)
-      .forRoutes(
-        { path: 'users/me', method: RequestMethod.ALL },
-        { path: 'users/me/address', method: RequestMethod.ALL },
-        { path: 'orders', method: RequestMethod.POST },
-      );
+    // Remove AuthorizeUser middleware from here
   }
 }

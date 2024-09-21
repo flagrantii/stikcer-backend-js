@@ -9,7 +9,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('login')
+  @Post('signin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'Returns JWT access token.' })
@@ -18,7 +18,7 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Post('register')
+  @Post('signup')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'User registration' })
   @ApiResponse({ status: 201, description: 'The user has been successfully created.' })
