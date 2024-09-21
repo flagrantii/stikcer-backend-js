@@ -22,6 +22,8 @@ import { FilesService } from './files/files.service';
 import { FilesController } from './files/files.controller';
 import { FilesModule } from './files/files.module';
 import { AuthMiddleware } from './middleware/authenticated';
+import { S3Module } from './s3/s3.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { AuthMiddleware } from './middleware/authenticated';
     OrdersModule,
     CategoriesModule,
     FilesModule,
+    S3Module,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController, FilesController],
   providers: [
