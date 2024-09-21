@@ -1,308 +1,162 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
 import { Order, User } from '@prisma/client';
-import { DatabaseService } from 'src/database/database.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import * as uuid from 'uuid';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async InsertOrderWithLines(
-    createOrderDto: CreateOrderDto,
-  ): Promise<{ order: Order; err: string }> {
+  async createOrder(createOrderDto: CreateOrderDto, user: User): Promise<Order> {
+    this.logger.log(`Attempting to create a new order for user: ${user.id}`);
     try {
-      const orderId: number = parseInt(uuid.v4().split('-').join(''), 16);
-      return this.databaseService.$transaction(async (prisma) => {
-        //calcuilate subtotal
-        let subTotal = 0;
-        for (let i = 0; i < createOrderDto.items.length; i++) {
-          const item = createOrderDto.items[i];
-          const product = await prisma.product.findUnique({
-            where: {
-              id: item.productId,
-            },
-          });
+      const orderId = parseInt(uuid.v4().replace(/-/g, ''), 16);
 
-          subTotal += product.unitPrice * product.amount;
+      return await this.databaseService.$transaction(async (prisma) => {
+        let subTotal = 0;
+        for (const item of createOrderDto.items) {
+          const product = await prisma.product.findUnique({
+            where: { id: item.productId },
+          });
+          if (!product) {
+            throw new NotFoundException(`Product with id ${item.productId} not found`);
+          }
+          subTotal += product.unitPrice * product.amount
         }
 
-        //create order
-        const createdOrder = await prisma.order.create({
+        const order = await prisma.order.create({
           data: {
             id: orderId,
-            userId: createOrderDto.userId,
+            userId: user.id,
             orderSubTotal: subTotal,
             shippingFee: createOrderDto.shippingFee,
             shippingMethod: createOrderDto.shippingMethod,
             paymentId: createOrderDto.paymentId,
             status: createOrderDto.status,
+            orderLines: {
+              create: createOrderDto.items.map(item => ({
+                productId: item.productId,
+                orderId: orderId,
+              })),
+            },
           },
+          include: { orderLines: true },
         });
 
-        //create order lines
-        for (let i = 0; i < createOrderDto.items.length; i++) {
-          const item = createOrderDto.items[i];
-          await prisma.orderLine.createMany({
-            data: {
-              orderId: orderId,
-              productId: item.productId,
-            },
-          });
-        }
-
-        return {
-          order: createdOrder,
-          err: null,
-        };
+        return order;
       });
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        order: null,
-        err,
-      };
+    } catch (error) {
+      this.logger.error(`Failed to create order: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to create order');
     }
   }
 
-  async FindAllOrders(user: User): Promise<{ orders: Order[]; err: string }> {
+  async findAllOrders(user: User): Promise<Order[]> {
+    this.logger.log(`Attempting to find all orders for user: ${user.id}`);
     try {
       if (user.role !== 'ADMIN') {
-        return {
-          orders: null,
-          err: 'you are not authorized to access this order',
-        };
+        throw new ForbiddenException('You are not authorized to access all orders');
       }
       const orders = await this.databaseService.order.findMany({
-        include: {
-          orderLines: true,
-        },
+        include: { orderLines: true },
       });
-
-      return {
-        orders,
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        orders: null,
-        err,
-      };
+      return orders;
+    } catch (error) {
+      this.logger.error(`Failed to fetch orders: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async FindOrdersByUserId(
-    userId: number,
-    user: User,
-  ): Promise<{ orders: Order[]; err: string }> {
+  async findOrdersByUserId(userId: number, user: User): Promise<Order[]> {
+    this.logger.log(`Attempting to find orders for user with id: ${userId}`);
     try {
-      if (user.role === 'ADMIN') {
-        const orders = await this.databaseService.order.findMany({
-          where: {
-            userId,
-          },
-          include: {
-            orderLines: true,
-          },
-        });
-        return {
-          orders,
-          err: null,
-        };
-      } else if (user.role === 'USER') {
-        if (userId !== user.id) {
-          return {
-            orders: null,
-            err: 'you are not authorized to access this order',
-          };
-        }
-        const orders = await this.databaseService.order.findMany({
-          where: {
-            userId,
-          },
-          include: {
-            orderLines: true,
-          },
-        });
-        return {
-          orders,
-          err: null,
-        };
+      if (user.role !== 'ADMIN' && user.id !== userId) {
+        throw new ForbiddenException('You are not authorized to access these orders');
       }
-
-      return {
-        orders: null,
-        err: 'you are not authorized to access this order',
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        orders: null,
-        err,
-      };
+      const orders = await this.databaseService.order.findMany({
+        where: { userId },
+        include: { orderLines: true },
+      });
+      return orders;
+    } catch (error) {
+      this.logger.error(`Failed to fetch orders: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async FindOrderById(
-    id: number,
-    req: Request,
-  ): Promise<{ order: Order; err: string }> {
+  async findOrderById(id: number, user: User): Promise<Order> {
+    this.logger.log(`Attempting to find order with id: ${id}`);
     try {
       const order = await this.databaseService.order.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          orderLines: true,
-        },
+        where: { id },
+        include: { orderLines: true },
       });
 
-      // role: admin
-      if (req['user'].role === 'ADMIN') {
-        if (!order) {
-          return {
-            order: null,
-            err: 'not found this order',
-          };
-        }
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
 
-        return {
-          order,
-          err: null,
-        };
+      if (user.role !== 'ADMIN' && order.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to access this order');
       }
-      // role: user
-      else if (req['user'].role === 'USER') {
-        // ownership validation
-        if (order && order.userId === req['user'].id) {
-          return {
-            order,
-            err: null,
-          };
-        } else {
-          return {
-            order: null,
-            err: 'you are not authorized to access this order',
-          };
-        }
-      }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        order: null,
-        err: err.message,
-      };
+
+      return order;
+    } catch (error) {
+      this.logger.error(`Failed to fetch order: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async UpdateOrderById(
-    id: number,
-    updateOrderDto: UpdateOrderDto,
-    req: Request,
-  ): Promise<{ order: Order; err: string }> {
+  async updateOrderById(id: number, updateOrderDto: UpdateOrderDto, user: User): Promise<Order> {
+    this.logger.log(`Attempting to update order with id: ${id}`);
     try {
-      const order = await this.databaseService.order.findUnique({
-        where: {
-          id,
-        },
+      const existingOrder = await this.databaseService.order.findUnique({
+        where: { id },
+        include: { orderLines: true },
       });
-      if (req['user'].role === 'ADMIN') {
-        if (!order) {
-          return {
-            order: null,
-            err: 'not found this order',
-          };
-        }
-        const updatedOrder = await this.databaseService.order.update({
-          where: {
-            id,
-          },
-          data: updateOrderDto,
-        });
-        return {
-          order: updatedOrder,
-          err: null,
-        };
-      } else if (req['user'].role === 'USER') {
-        if (order && order.userId === req['user'].id) {
-          const updatedOrder = await this.databaseService.order.update({
-            where: {
-              id,
-            },
-            data: updateOrderDto,
-          });
-          return {
-            order: updatedOrder,
-            err: null,
-          };
-        } else {
-          return {
-            order: null,
-            err: 'you are not authorized to access this order',
-          };
-        }
+
+      if (!existingOrder) {
+        throw new NotFoundException('Order not found');
       }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        order: null,
-        err: err.message,
-      };
+
+      if (user.role !== 'ADMIN' && existingOrder.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to update this order');
+      }
+
+      const updatedOrder = await this.databaseService.order.update({
+        where: { id },
+        data: updateOrderDto,
+        include: { orderLines: true },
+      });
+
+      return updatedOrder;
+    } catch (error) {
+      this.logger.error(`Failed to update order: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async DeleteOrderById(id: number, req: Request): Promise<{ err: string }> {
+  async deleteOrderById(id: number, user: User): Promise<void> {
+    this.logger.log(`Attempting to delete order with id: ${id}`);
     try {
-      const order = await this.databaseService.order.findUnique({
-        where: {
-          id,
-        },
-      });
+      const existingOrder = await this.databaseService.order.findUnique({ where: { id } });
 
-      // role: admin
-      if (req['user'].role === 'ADMIN') {
-        if (!order) {
-          return {
-            err: 'not found this order',
-          };
-        }
-
-        await this.databaseService.order.delete({
-          where: {
-            id,
-          },
-        });
-
-        return {
-          err: null,
-        };
+      if (!existingOrder) {
+        throw new NotFoundException('Order not found');
       }
-      // role: user
-      else if (req['user'].role === 'USER') {
-        // ownership validation
-        if (order && order.userId === req['user'].id) {
-          await this.databaseService.order.delete({
-            where: {
-              id,
-            },
-          });
 
-          return {
-            err: null,
-          };
-        } else {
-          return {
-            err: 'you are not authorized to access this order',
-          };
-        }
+      if (user.role !== 'ADMIN' && existingOrder.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to delete this order');
       }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        err: err.message,
-      };
+
+      await this.databaseService.order.delete({ where: { id } });
+    } catch (error) {
+      this.logger.error(`Failed to delete order: ${error.message}`, error.stack);
+      throw error;
     }
   }
 }

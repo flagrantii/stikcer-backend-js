@@ -6,197 +6,73 @@ import {
   Patch,
   Param,
   Delete,
-  Res,
-  Req,
+  Request,
+  UseGuards,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { Response } from 'express';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { Order } from '@prisma/client';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 
+@ApiTags('orders')
 @Controller('orders')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  async CreateOrder(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() createOrderDataDto: CreateOrderDto,
-  ) {
-    createOrderDataDto.userId = req['user'].id;
-    const { order, err } =
-      await this.ordersService.InsertOrderWithLines(createOrderDataDto);
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(201).json({
-      success: true,
-      data: order,
-    });
+  @ApiOperation({ summary: 'Create a new order' })
+  @ApiResponse({ status: 201, description: 'The order has been successfully created.' })
+  @ApiBody({ type: CreateOrderDto })
+  async createOrder(@Body() createOrderDto: CreateOrderDto, @Request() req) {
+    return this.ordersService.createOrder(createOrderDto, req.user);
   }
 
   @Get()
-  async GetAllOrders(@Req() req: Request, @Res() res: Response) {
-    let orders: Order[];
-    let err: string;
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get all orders' })
+  @ApiResponse({ status: 200, description: 'Returns all orders.' })
+  async getAllOrders(@Request() req) {
+    return this.ordersService.findAllOrders(req.user);
+  }
 
-    const userRole: string = req['user'].role;
-
-    switch (userRole) {
-      case 'ADMIN':
-        ({ orders, err } = await this.ordersService.FindAllOrders(req['user']));
-        break;
-      case 'USER':
-        ({ orders, err } = await this.ordersService.FindOrdersByUserId(
-          req['user'].id,
-          req['user'],
-        ));
-        break;
-      default:
-        err = 'invalid user role';
-    }
-
-    if (err !== null) {
-      return res.status(500).json({
-        success: true,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      amount: orders.length,
-      data: orders,
-    });
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get orders by user ID' })
+  @ApiResponse({ status: 200, description: 'Returns orders for the specified user.' })
+  @ApiParam({ name: 'userId', type: 'string' })
+  async getOrdersByUserId(@Param('userId') userId: string, @Request() req) {
+    return this.ordersService.findOrdersByUserId(+userId, req.user);
   }
 
   @Get(':id')
-  async GetOrderById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('id') id: number,
-  ) {
-    const { order, err } = await this.ordersService.FindOrderById(id, req);
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'you are not authorized to access this order':
-          statusCode = 401;
-          break;
-        case 'not found this order':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: order,
-    });
-  }
-
-  @Get('user/:id')
-  async GetOrdersByUserId(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('id') id: number,
-  ) {
-    const { orders, err } = await this.ordersService.FindOrdersByUserId(
-      id,
-      req['user'],
-    );
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: orders,
-    });
+  @ApiOperation({ summary: 'Get an order by ID' })
+  @ApiResponse({ status: 200, description: 'Returns the order.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async getOrderById(@Param('id') id: string, @Request() req) {
+    return this.ordersService.findOrderById(+id, req.user);
   }
 
   @Patch(':id')
-  async UpdateOrderById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('id') id: number,
-    @Body() updateOrderDto: UpdateOrderDto,
-  ) {
-    const { order, err } = await this.ordersService.UpdateOrderById(
-      id,
-      updateOrderDto,
-      req['user'],
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'you are not authorized to access this order':
-          statusCode = 401;
-          break;
-        case 'not found this order':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: order,
-    });
+  @ApiOperation({ summary: 'Update an order' })
+  @ApiResponse({ status: 200, description: 'The order has been successfully updated.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: UpdateOrderDto })
+  async updateOrder(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @Request() req) {
+    return this.ordersService.updateOrderById(+id, updateOrderDto, req.user);
   }
 
   @Delete(':id')
-  async DeleteOrderById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('id') id: number,
-  ) {
-    const { err } = await this.ordersService.DeleteOrderById(id, req);
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'you are not authorized to access this order':
-          statusCode = 401;
-          break;
-        case 'not found this order':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: {},
-    });
+  @ApiOperation({ summary: 'Delete an order' })
+  @ApiResponse({ status: 204, description: 'The order has been successfully deleted.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteOrder(@Param('id') id: string, @Request() req) {
+    await this.ordersService.deleteOrderById(+id, req.user);
   }
 }
