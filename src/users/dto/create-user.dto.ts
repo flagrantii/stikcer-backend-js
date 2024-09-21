@@ -9,11 +9,11 @@ import {
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
-  readonly firstname: string;
+  readonly firstName: string;
 
   @IsString()
   @IsNotEmpty()
-  readonly lastname: string;
+  readonly lastName: string;
 
   @IsEmail()
   @IsNotEmpty()

@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { LoginUserDto } from './dto/login-user.dto';
 import { DatabaseService } from 'src/database/database.service';
 import { JwtService } from '@nestjs/jwt';
@@ -8,97 +8,78 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly jwtService: JwtService,
   ) {}
-  async login(
-    loginUserDto: LoginUserDto,
-  ): Promise<{ token: string; err: string }> {
+
+  async validateUser(email: string, password: string): Promise<User | null> {
+    this.logger.log(`Attempting to validate user: ${email}`);
     try {
-      const existUser = await this.databaseService.user.findUnique({
-        where: {
-          email: loginUserDto.email,
-        },
-      });
-
-      if (!existUser)
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-
-      const isPasswordValid = await bcrypt.compare(
-        loginUserDto.password,
-        existUser.password,
-      );
-      if (!isPasswordValid)
-        throw new HttpException('Invalid password', HttpStatus.UNAUTHORIZED);
-
-      const token = await this.jwtService.signAsync({
-        id: existUser.id,
-        email: existUser.email,
-        role: existUser.role,
-      });
+      const user = await this.databaseService.user.findUnique({ where: { email } });
+      if (user && (await bcrypt.compare(password, user.password))) {
+        const { password: _, ...result } = user;
+        return {
+          ...result,
+          password: null,
+        };
+      }
+      return null;
+    } catch (error) {
+      this.logger.error(`Failed to validate user: ${error.message}`, error.stack);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+  }
+  async login(loginUserDto: LoginUserDto): Promise<{ token: string;}> {
+    this.logger.log(`Attempting to login user with email: ${loginUserDto.email}`);
+    try {
+      const user = await this.validateUser(loginUserDto.email, loginUserDto.password);
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      delete user.password;
+      const token = {id: user.id, email: user.email, role: user.role};
 
       return {
-        token,
-        err: null,
+        token: this.jwtService.sign(token),
       };
-    } catch (err) {
-      console.log(err);
-      return {
-        token: null,
-        err: err.message,
-      };
+    } catch (error) {
+      this.logger.error(`Failed to login user: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async InsertUser(
-    createUserDto: CreateUserDto,
-  ): Promise<{ user: User; err: string; token: string }> {
+  async register(createUserDto: CreateUserDto): Promise<{ user: User; token: string }> {
+    this.logger.log(`Attempting to register user with email: ${createUserDto.email}`);
     try {
-      // hashing password
-      const hashedPassword: string = await bcrypt.hash(
-        createUserDto.password,
-        10,
-      );
-      createUserDto.password = hashedPassword;
+      const existingUser = await this.databaseService.user.findUnique({
+        where: { email: createUserDto.email },
+      });
+      if (existingUser) {
+        throw new BadRequestException('User already exists');
+      }
 
-      // executing create user to database
+      const hashedPassword: string = await bcrypt.hash(createUserDto.password, 10);
       const user = await this.databaseService.user.create({
         data: {
-          firstName: createUserDto.firstname,
-          lastName: createUserDto.lastname,
-          email: createUserDto.email,
-          password: createUserDto.password,
-          phone: createUserDto.phone,
-          role: createUserDto.role,
+          ...createUserDto,
+          password: hashedPassword,
         },
       });
-      delete user.password;
-
       const token = await this.jwtService.signAsync({
         id: user.id,
         email: user.email,
         role: user.role,
       });
-
       return {
-        user: user,
-        err: null,
         token: token,
+        user: user,
       };
-    } catch (err) {
-      let message = 'An error occurred while processing your request.';
-
-      if (err.code === 'P2002' && err.meta?.target?.includes('email')) {
-        message = 'This email address is already registered.';
-      }
-
-      console.log('Error: ', err);
-      return {
-        user: null,
-        err: message,
-        token: null,
-      };
+    } catch (error) {
+      this.logger.error(`Failed to register user: ${error.message}`, error.stack);
+      throw error;
     }
   }
 }

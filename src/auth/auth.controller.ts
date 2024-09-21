@@ -1,54 +1,29 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginUserDto } from './dto/login-user.dto';
-import { Response } from 'express';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto'
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('signin')
-  async login(@Body() loginUserDto: LoginUserDto, @Res() res: Response) {
-    const { token, err } = await this.authService.login(loginUserDto);
-    if (token) {
-      return res.status(200).json({
-        success: true,
-        message: 'logged in successfully.',
-        token: token,
-      });
-    } else {
-      return res.status(err === 'User not found' ? 404 : 400).json({
-        success: false,
-        message: err,
-      });
-    }
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'User login' })
+  @ApiResponse({ status: 200, description: 'Returns JWT access token.' })
+  @ApiBody({ type: LoginUserDto })
+  async login(@Body() loginDto: LoginUserDto) {
+    return this.authService.login(loginDto);
   }
 
-  @Post('signout')
-  async logout(@Res() res: Response) {
-    return res.status(200).json({
-      success: true,
-      message: 'logged out successfully.',
-    });
-  }
-
-  @Post('signup')
-  async register(@Body() crateUserDto: CreateUserDto, @Res() res: Response) {
-    const { user, err, token } =
-      await this.authService.InsertUser(crateUserDto);
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-        token: null,
-      });
-    } else {
-      return res.status(201).json({
-        success: true,
-        data: user,
-        token: token,
-      });
-    }
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'User registration' })
+  @ApiResponse({ status: 201, description: 'The user has been successfully created.' })
+  @ApiBody({ type: CreateUserDto })
+  async register(@Body() registerDto: CreateUserDto) {
+    return this.authService.register(registerDto);
   }
 }
