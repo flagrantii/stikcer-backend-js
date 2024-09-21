@@ -43,10 +43,9 @@ export class ProductsService {
             productId: product.id,
             categoryId: createProductDto.categoryId,
             userId: user.id,
-            url: createProductDto.fileUrl,
             type: createProductDto.fileType,
             isPurchased: false,
-            name: `${product.id}`,
+            key: `${product.id}`,
             size: createProductDto.fileSize,
           },
         });
