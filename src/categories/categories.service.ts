@@ -1,172 +1,111 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+import { ProductCategory, User } from '@prisma/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { ProductCategory, User } from '@prisma/client';
-import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class CategoriesService {
+  private readonly logger = new Logger(CategoriesService.name);
+
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async InsertCategory(
-    createCategoryDto: CreateCategoryDto,
-    user: User,
-  ): Promise<{ category: ProductCategory; err: string }> {
+  async createCategory(createCategoryDto: CreateCategoryDto, user: User): Promise<ProductCategory> {
+    this.logger.log(`Attempting to create a new category`);
     try {
       if (user.role !== 'ADMIN') {
-        return {
-          category: null,
-          err: 'You are not authorized to access this category',
-        };
+        throw new ForbiddenException('You are not authorized to create categories');
       }
 
       const category = await this.databaseService.productCategory.create({
         data: createCategoryDto,
       });
 
-      return {
-        category,
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        category: null,
-        err: err.message,
-      };
+      this.logger.log(`Category created successfully: ${category.id}`);
+      return category;
+    } catch (error) {
+      this.logger.error(`Failed to create category: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async FindAllCategories(): Promise<{
-    categories: ProductCategory[];
-    err: string;
-  }> {
+  async findAllCategories(): Promise<ProductCategory[]> {
+    this.logger.log('Attempting to find all categories');
     try {
       const categories = await this.databaseService.productCategory.findMany();
-
-      return {
-        categories,
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        categories: null,
-        err: err.message,
-      };
+      return categories;
+    } catch (error) {
+      this.logger.error(`Failed to fetch categories: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to fetch categories');
     }
   }
 
-  async FindCategoryById(
-    id: number,
-  ): Promise<{ category: ProductCategory; err: string }> {
+  async findCategoryById(id: number): Promise<ProductCategory> {
+    this.logger.log(`Attempting to find category with id: ${id}`);
     try {
       const category = await this.databaseService.productCategory.findUnique({
-        where: {
-          id,
-        },
+        where: { id },
       });
 
       if (!category) {
-        return {
-          category: null,
-          err: 'not found this category',
-        };
+        throw new NotFoundException('Category not found');
       }
 
-      return {
-        category,
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        category: null,
-        err: err.message,
-      };
+      return category;
+    } catch (error) {
+      this.logger.error(`Failed to fetch category: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async UpdateCategoryById(
-    id: number,
-    updateCategoryDto: UpdateCategoryDto,
-    user: User,
-  ): Promise<{ category: ProductCategory; err: string }> {
+  async updateCategoryById(id: number, updateCategoryDto: UpdateCategoryDto, user: User): Promise<ProductCategory> {
+    this.logger.log(`Attempting to update category with id: ${id}`);
     try {
       if (user.role !== 'ADMIN') {
-        return {
-          category: null,
-          err: 'You are not authorized to access this category',
-        };
+        throw new ForbiddenException('You are not authorized to update categories');
       }
 
-      const existed = await this.databaseService.productCategory.findUnique({
-        where: {
-          id,
-        },
+      const existingCategory = await this.databaseService.productCategory.findUnique({
+        where: { id },
       });
 
-      if (!existed) {
-        return {
-          category: null,
-          err: 'not found this category',
-        };
+      if (!existingCategory) {
+        throw new NotFoundException('Category not found');
       }
 
-      const category = await this.databaseService.productCategory.update({
-        where: {
-          id,
-        },
+      const updatedCategory = await this.databaseService.productCategory.update({
+        where: { id },
         data: updateCategoryDto,
       });
 
-      return {
-        category,
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        category: null,
-        err: err.message,
-      };
+      this.logger.log(`Category updated successfully: ${updatedCategory.id}`);
+      return updatedCategory;
+    } catch (error) {
+      this.logger.error(`Failed to update category: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async DeleteCategoryById(id: number, user: User): Promise<{ err: string }> {
+  async deleteCategoryById(id: number, user: User): Promise<void> {
+    this.logger.log(`Attempting to delete category with id: ${id}`);
     try {
       if (user.role !== 'ADMIN') {
-        return {
-          err: 'You are not authorized to access this category',
-        };
+        throw new ForbiddenException('You are not authorized to delete categories');
       }
 
-      const existed = await this.databaseService.productCategory.findUnique({
-        where: {
-          id,
-        },
+      const existingCategory = await this.databaseService.productCategory.findUnique({
+        where: { id },
       });
 
-      if (!existed) {
-        return {
-          err: 'not found this category',
-        };
+      if (!existingCategory) {
+        throw new NotFoundException('Category not found');
       }
 
-      await this.databaseService.productCategory.delete({
-        where: {
-          id,
-        },
-      });
-
-      return {
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        err: err.message,
-      };
+      await this.databaseService.productCategory.delete({ where: { id } });
+      this.logger.log(`Category deleted successfully: ${id}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete category: ${error.message}`, error.stack);
+      throw error;
     }
   }
 }

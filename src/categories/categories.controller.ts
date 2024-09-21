@@ -1,153 +1,60 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Res,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, HttpStatus, HttpCode } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { Response } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 
+@ApiTags('categories')
 @Controller('categories')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  async CreateCategory(
-    @Res() res: Response,
-    @Req() req: Request,
-    @Body() createCategoryDto: CreateCategoryDto,
-  ) {
-    const { category, err } = await this.categoriesService.InsertCategory(
-      createCategoryDto,
-      req['user'],
-    );
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(201).json({
-      success: true,
-      data: category,
-    });
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Create a new category' })
+  @ApiResponse({ status: 201, description: 'The category has been successfully created.' })
+  @ApiBody({ type: CreateCategoryDto })
+  async createCategory(@Body() createCategoryDto: CreateCategoryDto, @Request() req) {
+    return this.categoriesService.createCategory(createCategoryDto, req.user);
   }
 
   @Get()
-  async GetAllCategories(@Res() res: Response) {
-    const { categories, err } =
-      await this.categoriesService.FindAllCategories();
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      amount: categories.length,
-      data: categories,
-    });
+  @ApiOperation({ summary: 'Get all categories' })
+  @ApiResponse({ status: 200, description: 'Returns all categories.' })
+  async getAllCategories() {
+    return this.categoriesService.findAllCategories();
   }
 
   @Get(':id')
-  async GetCategoryById(@Res() res: Response, @Param('id') id: string) {
-    const { category, err } =
-      await this.categoriesService.FindCategoryById(+id);
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this category':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: category,
-    });
+  @ApiOperation({ summary: 'Get a category by ID' })
+  @ApiResponse({ status: 200, description: 'Returns the category.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async getCategoryById(@Param('id') id: string) {
+    return this.categoriesService.findCategoryById(+id);
   }
 
   @Patch(':id')
-  async UpdateCategoryById(
-    @Res() res: Response,
-    @Param('id') id: string,
-    @Body() updateCategoryDto: UpdateCategoryDto,
-    @Req() req: Request,
-  ) {
-    const { category, err } = await this.categoriesService.UpdateCategoryById(
-      +id,
-      updateCategoryDto,
-      req['user'],
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this category':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: category,
-    });
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Update a category' })
+  @ApiResponse({ status: 200, description: 'The category has been successfully updated.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: UpdateCategoryDto })
+  async updateCategory(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto, @Request() req) {
+    return this.categoriesService.updateCategoryById(+id, updateCategoryDto, req.user);
   }
 
   @Delete(':id')
-  async DeleteCategoryById(
-    @Res() res: Response,
-    @Param('id') id: string,
-    @Req() req: Request,
-  ) {
-    const { err } = await this.categoriesService.DeleteCategoryById(
-      +id,
-      req['user'],
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this category':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: {},
-    });
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Delete a category' })
+  @ApiResponse({ status: 204, description: 'The category has been successfully deleted.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteCategory(@Param('id') id: string, @Request() req) {
+    await this.categoriesService.deleteCategoryById(+id, req.user);
   }
 }
