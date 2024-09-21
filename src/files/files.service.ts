@@ -1,215 +1,134 @@
-import {
-  Injectable,
-  BadRequestException,
-  InternalServerErrorException,
-  NotFoundException,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
-import { DatabaseService } from 'src/database/database.service';
-import { S3Service } from 'src/s3/s3.service';
-import { CreateFileDto } from './dto/create-file';
-import { User, File } from '@prisma/client';
+import { Injectable, Logger, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+import { S3Service } from '../s3/s3.service';
+import { File, User } from '@prisma/client';
+import { CreateFileDto } from '../files/dto/create-file';
+import { UpdateFileDto } from '../files/dto/update-file';
 import * as uuid from 'uuid';
-import { UpdateFileDto } from './dto/update-file';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class FilesService {
   private readonly logger = new Logger(FilesService.name);
+
   constructor(
     private readonly databaseService: DatabaseService,
-    private readonly s3Service: S3Service,
-    private readonly configService: ConfigService,
+    private readonly s3Service: S3Service
   ) {}
 
-  private generateFileId(): number {
-    return parseInt(uuid.v4().split('-').join(''), 16);
-  }
-
-  async uploadFile(
-    createFileDto: CreateFileDto,
-    file: Express.Multer.File,
-    user: User,
-  ): Promise<{ file: File; error: string }> {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
-
+  async uploadFile(createFileDto: CreateFileDto, file: Express.Multer.File, user: User): Promise<File> {
+    this.logger.log(`Attempting to upload a new file for user: ${user.id}`);
     try {
       const { key, size, type } = await this.s3Service.uploadFile(file);
-      const fileId = this.generateFileId();
+      const fileId = parseInt(uuid.v4().replace(/-/g, ''), 16);
 
-      return await this.databaseService.$transaction(async (prisma) => {
-        const createdFile = await prisma.file.create({
-          data: {
-            id: fileId,
-            userId: user.id,
-            productId: createFileDto.productId,
-            categoryId: createFileDto.categoryId,
-            key: key,
-            type: type,
-            size: size,
-            isPurchased: false,
-          },
-        });
-        this.logger.log(`File uploaded successfully: ${createdFile.id}`);
-        return { file: createdFile, error: null };
+      const createdFile = await this.databaseService.file.create({
+        data: {
+          id: fileId,
+          userId: user.id,
+          productId: createFileDto.productId,
+          categoryId: createFileDto.categoryId,
+          key: key,
+          type: type,
+          size: size,
+          isPurchased: false,
+        },
       });
+
+      this.logger.log(`File uploaded successfully: ${createdFile.id}`);
+      return createdFile;
     } catch (error) {
-      this.logger.error(`Failed to upload file`, error.stack);
+      this.logger.error(`Failed to upload file: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to upload file');
     }
   }
 
-  async getFilesFromProductId(productId: number): Promise<{
-    files: Array<{ file: File; url: string | null }>;
-    error: string;
-  }> {
+  async getFilesFromProductId(productId: number, user: User): Promise<Array<{ file: File; url: string }>> {
+    this.logger.log(`Attempting to get files for product: ${productId}`);
     try {
       const files = await this.databaseService.file.findMany({
         where: { productId: productId },
       });
+
       if (files.length === 0) {
-        this.logger.error(`Files not found for productId: ${productId}`);
         throw new NotFoundException('Files not found');
+      }
+
+      const product = await this.databaseService.product.findUnique({
+        where: { id: productId },
+      });
+
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+
+      if (user.role !== 'ADMIN' && product.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to access these files');
       }
 
       const filesWithUrls = await Promise.all(
         files.map(async (file) => {
-          const { error, url } = await this.s3Service.getPresignedUrl(file.key);
-          if (error) {
-            throw new InternalServerErrorException(
-              'Failed to generate presigned URL',
-            );
-          }
+          const { url } = await this.s3Service.getPresignedUrl(file.key);
           return { file, url };
-        }),
+        })
       );
 
-      return { files: filesWithUrls, error: null };
+      return filesWithUrls;
     } catch (error) {
-      this.logger.error(
-        `Failed to get files for productId: ${productId}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException('Failed to get files');
+      this.logger.error(`Failed to get files for productId: ${productId}`, error.stack);
+      throw error;
     }
   }
 
-  async updateFile(
-    id: number,
-    updateFileDto: UpdateFileDto,
-    user: User,
-  ): Promise<{ file: File; error: string }> {
+  async updateFile(id: number, updateFileDto: UpdateFileDto, user: User): Promise<File> {
+    this.logger.log(`Attempting to update file with id: ${id}`);
     try {
-      const file = await this.databaseService.file.findUnique({
+      const existingFile = await this.databaseService.file.findUnique({
         where: { id },
       });
-      if (!file) {
-        this.logger.error(`File not found for id: ${id}`);
+
+      if (!existingFile) {
         throw new NotFoundException('File not found');
       }
 
-      if (user.role === 'USER' && file.userId !== user.id) {
-        this.logger.error(`Unauthorized access attempt for file id: ${id}`);
-        throw new ForbiddenException(
-          'You are not authorized to update this file',
-        );
+      if (user.role !== 'ADMIN' && existingFile.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to update this file');
       }
 
-      return await this.databaseService.$transaction(async (prisma) => {
-        const updatedFile = await prisma.file.update({
-          where: { id },
-          data: updateFileDto,
-        });
-        this.logger.log(`File updated successfully: ${updatedFile.id}`);
-        return { file: updatedFile, error: null };
+      const updatedFile = await this.databaseService.file.update({
+        where: { id },
+        data: updateFileDto,
       });
+
+      this.logger.log(`File updated successfully: ${updatedFile.id}`);
+      return updatedFile;
     } catch (error) {
-      this.logger.error(`Failed to update file: ${id}`, error.stack);
-      throw new InternalServerErrorException('Failed to update file');
+      this.logger.error(`Failed to update file: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async deleteFile(
-    id: number,
-    user: User,
-  ): Promise<{ file: File; error: string }> {
+  async deleteFile(id: number, user: User): Promise<void> {
+    this.logger.log(`Attempting to delete file with id: ${id}`);
     try {
-      const file = await this.databaseService.file.findUnique({
+      const existingFile = await this.databaseService.file.findUnique({
         where: { id },
       });
-      if (!file) {
-        this.logger.error(`File not found for id: ${id}`);
+
+      if (!existingFile) {
         throw new NotFoundException('File not found');
       }
 
-      if (user.role === 'USER' && file.userId !== user.id) {
-        this.logger.error(`Unauthorized access attempt for file id: ${id}`);
-        throw new ForbiddenException(
-          'You are not authorized to delete this file',
-        );
+      if (user.role !== 'ADMIN' && existingFile.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to delete this file');
       }
 
-      //delete file from s3
-      const { error } = await this.s3Service.deleteFile(file.key);
-      if (error) {
-        this.logger.error(`Failed to delete file from S3: ${error}`);
-        throw new InternalServerErrorException('Failed to delete file from S3');
-      }
+      await this.s3Service.deleteFile(existingFile.key);
+      await this.databaseService.file.delete({ where: { id } });
 
-      return await this.databaseService.$transaction(async (prisma) => {
-        const deletedFile = await prisma.file.delete({
-          where: { id },
-        });
-        this.logger.log(`File deleted successfully: ${deletedFile.id}`);
-        return { file: deletedFile, error: null };
-      });
+      this.logger.log(`File deleted successfully: ${id}`);
     } catch (error) {
-      this.logger.error(`Failed to delete file: ${id}`, error.stack);
-      throw new InternalServerErrorException('Failed to delete file');
-    }
-  }
-
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async cleanupUnpurchasedFiles(): Promise<void> {
-    const fourteenDaysAgo = new Date(
-      Date.now() -
-        this.configService.get<number>('UNPURCHASED_FILE_RETENTION_PERIOD'),
-    );
-
-    const unpurchasedFiles = await this.databaseService.file.findMany({
-      where: {
-        isPurchased: false,
-        createdAt: {
-          lt: fourteenDaysAgo,
-        },
-      },
-    });
-
-    for (const file of unpurchasedFiles) {
-      try {
-        const { error } = await this.s3Service.deleteFile(file.key);
-        if (error) {
-          this.logger.error(
-            `Failed to delete unpurchased file from S3: ${error}`,
-          );
-          throw new InternalServerErrorException(
-            'Failed to delete unpurchased file from S3',
-          );
-        }
-        const deletedFile = await this.databaseService.file.delete({
-          where: { id: file.id },
-        });
-        this.logger.log(`Deleted unpurchased file: ${deletedFile.id}`);
-      } catch (error) {
-        this.logger.error(
-          `Failed to delete unpurchased file: ${file.id}`,
-          error.stack,
-        );
-      }
+      this.logger.error(`Failed to delete file: ${error.message}`, error.stack);
+      throw error;
     }
   }
 }

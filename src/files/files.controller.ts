@@ -1,111 +1,68 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Param,
-  Body,
-  UseInterceptors,
-  UploadedFile,
-  Res,
-  HttpStatus,
-  ParseIntPipe,
-  Patch,
-  Req,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, HttpStatus, HttpCode, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FilesService } from './files.service';
-import { CreateFileDto } from './dto/create-file';
-import { UpdateFileDto } from './dto/update-file';
-import { Response } from 'express';
+import { CreateFileDto } from '../files/dto/create-file';
+import { UpdateFileDto } from '../files/dto/update-file';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
+@ApiTags('files')
 @Controller('files')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() createFileDto: CreateFileDto,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    const result = await this.filesService.uploadFile(
-      createFileDto,
-      file,
-      req['user'],
-    );
-    if (result.error) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        success: false,
-        message: result.error,
-      });
-    }
-    return res.status(HttpStatus.CREATED).json({
-      success: true,
-      data: result.file,
-    });
+  @ApiOperation({ summary: 'Upload a new file' })
+  @ApiResponse({ status: 201, description: 'The file has been successfully uploaded.' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+        productId: {
+          type: 'number',
+        },
+        categoryId: {
+          type: 'number',
+        },
+      },
+    },
+  })
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Body() createFileDto: CreateFileDto, @Request() req) {
+    return this.filesService.uploadFile(createFileDto, file, req.user);
   }
 
-  @Get('product/:id')
-  async getFilesFromProductId(
-    @Param('id', ParseIntPipe) id: number,
-    @Res() res: Response,
-  ) {
-    const result = await this.filesService.getFilesFromProductId(id);
-    if (result.error) {
-      return res.status(HttpStatus.NOT_FOUND).json({
-        success: false,
-        message: result.error,
-      });
-    }
-    return res.status(HttpStatus.OK).json({
-      success: true,
-      data: result.files,
-    });
+  @Get('product/:productId')
+  @ApiOperation({ summary: 'Get files by product ID' })
+  @ApiResponse({ status: 200, description: 'Returns files for the specified product.' })
+  @ApiParam({ name: 'productId', type: 'string' })
+  async getFilesByProductId(@Param('productId') productId: string, @Request() req) {
+    return this.filesService.getFilesFromProductId(+productId, req.user);
   }
 
   @Patch(':id')
-  async updateFile(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateFileDto: UpdateFileDto,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    const result = await this.filesService.updateFile(
-      id,
-      updateFileDto,
-      req['user'],
-    );
-    if (result.error) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        success: false,
-        message: result.error,
-      });
-    }
-    return res.status(HttpStatus.OK).json({
-      success: true,
-      data: result.file,
-    });
+  @ApiOperation({ summary: 'Update a file' })
+  @ApiResponse({ status: 200, description: 'The file has been successfully updated.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: UpdateFileDto })
+  async updateFile(@Param('id') id: string, @Body() updateFileDto: UpdateFileDto, @Request() req) {
+    return this.filesService.updateFile(+id, updateFileDto, req.user);
   }
 
   @Delete(':id')
-  async deleteFile(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    const result = await this.filesService.deleteFile(id, req['user']);
-    if (result.error) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        success: false,
-        message: result.error,
-      });
-    }
-    return res.status(HttpStatus.OK).json({
-      success: true,
-      message: 'File deleted successfully',
-    });
+  @ApiOperation({ summary: 'Delete a file' })
+  @ApiResponse({ status: 204, description: 'The file has been successfully deleted.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteFile(@Param('id') id: string, @Request() req) {
+    await this.filesService.deleteFile(+id, req.user);
   }
 }
