@@ -83,6 +83,15 @@ export class UsersController {
     return this.usersService.findAddressByUserId(+id, req.user);
   }
 
+  @Post(':id/address')
+  @ApiOperation({ summary: 'Create a user\'s address' })
+  @ApiResponse({ status: 201, description: 'The address has been successfully created.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: CreateAddressDto })
+  async createUserAddress(@Param('id') id: string, @Body() createAddressDto: CreateAddressDto, @Request() req) {
+    return this.usersService.insertAddress(createAddressDto);
+  }
+
   @Patch(':id/address')
   @ApiOperation({ summary: 'Update a user\'s address' })
   @ApiResponse({ status: 200, description: 'The address has been successfully updated.' })
