@@ -82,10 +82,9 @@ model File {
   productId   Int
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   categoryId  Int
-  name        String
+  key         String
   type        String
   size        Int
-  url         String
   isPurchased Boolean
   deletedAt   DateTime?
   createdAt   DateTime @default(now())
