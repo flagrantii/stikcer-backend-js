@@ -6,200 +6,81 @@ import {
   Patch,
   Param,
   Delete,
-  Req,
-  Res,
+  UseGuards,
+  Request,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Request, Response } from 'express';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
+@ApiTags('products')
 @Controller('products')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  async CreateProduct(
-    @Res() res: Response,
-    @Req() req: Request,
-    @Body() createProductDto: CreateProductDto,
-  ) {
-    const { product, err } = await this.productsService.InsertProduct(
-      createProductDto,
-      req['user'],
-    );
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(201).json({
-      success: true,
-      data: product,
-    });
+  @ApiOperation({ summary: 'Create a new product' })
+  @ApiResponse({ status: 201, description: 'The product has been successfully created.' })
+  @ApiBody({ type: CreateProductDto })
+  async createProduct(@Body() createProductDto: CreateProductDto, @Request() req) {
+    return this.productsService.createProduct(createProductDto, req.user);
   }
 
   @Get()
-  async GetAllProducts(@Res() res: Response, @Req() req: Request) {
-    const { products, err } = await this.productsService.FindAllProducts(
-      req['user'],
-    );
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      amount: products.length,
-      data: products,
-    });
-  }
-
-  @Get('category/:categoryId')
-  async FindAllProductsByCategoryId(
-    @Res() res: Response,
-    @Param('categoryId') categoryId: string,
-    @Req() req: Request,
-  ) {
-    const { products, err } =
-      await this.productsService.FindAllProductsByCategoryId(
-        +categoryId,
-        req['user'],
-      );
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: products,
-    });
-  }
-
-  @Get('user/:userId')
-  async FindAllProductsByUserId(
-    @Res() res: Response,
-    @Param('userId') userId: string,
-    @Req() req: Request,
-  ) {
-    const { products, err } =
-      await this.productsService.FindAllProductsByUserId(+userId, req['user']);
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: products,
-    });
+  @ApiOperation({ summary: 'Get all products' })
+  @ApiResponse({ status: 200, description: 'Returns all products.' })
+  async getAllProducts(@Request() req) {
+    return this.productsService.findAllProducts(req.user);
   }
 
   @Get(':id')
-  async FindProductById(
-    @Res() res: Response,
-    @Param('id') id: string,
-    @Req() req: Request,
-  ) {
-    const { product, err } = await this.productsService.FindProductById(
-      +id,
-      req['user'],
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this product':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: product,
-    });
+  @ApiOperation({ summary: 'Get a product by ID' })
+  @ApiResponse({ status: 200, description: 'Returns the product.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async getProductById(@Param('id') id: string, @Request() req) {
+    return this.productsService.findProductById(+id, req.user);
   }
 
   @Patch(':id')
-  async UpdateProductById(
-    @Res() res: Response,
-    @Param('id') id: string,
-    @Body() updateProductDto: UpdateProductDto,
-    @Req() req: Request,
-  ) {
-    const { product, err } = await this.productsService.UpdateProductById(
-      +id,
-      updateProductDto,
-      req['user'],
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this product':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: product,
-    });
+  @ApiOperation({ summary: 'Update a product' })
+  @ApiResponse({ status: 200, description: 'The product has been successfully updated.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: UpdateProductDto })
+  async updateProduct(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @Request() req) {
+    return this.productsService.updateProductById(+id, updateProductDto, req.user);
   }
 
   @Delete(':id')
-  async DeleteProductById(
-    @Res() res: Response,
-    @Param('id') id: string,
-    @Req() req: Request,
-  ) {
-    const { err } = await this.productsService.DeleteProductById(
-      +id,
-      req['user'],
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this product':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
+  @ApiOperation({ summary: 'Delete a product' })
+  @ApiResponse({ status: 204, description: 'The product has been successfully deleted.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteProduct(@Param('id') id: string, @Request() req) {
+    await this.productsService.deleteProductById(+id, req.user);
+  }
 
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    }
+  @Get('category/:categoryId')
+  @ApiOperation({ summary: 'Get products by category ID' })
+  @ApiResponse({ status: 200, description: 'Returns products in the specified category.' })
+  @ApiParam({ name: 'categoryId', type: 'string' })
+  async getProductsByCategoryId(@Param('categoryId') categoryId: string, @Request() req) {
+    return this.productsService.findAllProductsByCategoryId(+categoryId, req.user);
+  }
 
-    return res.status(200).json({
-      success: true,
-      data: {},
-    });
+  @Get('user/:userId')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get products by user ID' })
+  @ApiResponse({ status: 200, description: 'Returns products created by the specified user.' })
+  @ApiParam({ name: 'userId', type: 'string' })
+  async getProductsByUserId(@Param('userId') userId: string, @Request() req) {
+    return this.productsService.findAllProductsByUserId(+userId, req.user);
   }
 }

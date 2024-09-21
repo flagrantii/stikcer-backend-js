@@ -1,38 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+import { Product, User } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Product, User } from '@prisma/client';
-import { DatabaseService } from 'src/database/database.service';
 import * as uuid from 'uuid';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async InsertProduct(
-    createProductDto: CreateProductDto,
-    user: User,
-  ): Promise<{ product: Product; err: string }> {
+  async createProduct(createProductDto: CreateProductDto, user: User): Promise<Product> {
+    this.logger.log(`Attempting to create a new product for user: ${user.id}`);
     try {
       const productId = parseInt(uuid.v4().replace(/-/g, ''), 16);
 
-      return await this.databaseService.$transaction(async (prisma) => {
+      const product = await this.databaseService.$transaction(async (prisma) => {
         const product = await prisma.product.create({
           data: {
             id: productId,
-            categoryId: createProductDto.categoryId,
             userId: user.id,
-            size: createProductDto.size,
-            material: createProductDto.material,
-            shape: createProductDto.shape,
-            printingSide: createProductDto.printingSide,
-            parcelColor: createProductDto.parcelColor,
-            inkColor: createProductDto.inkColor,
-            unitPrice: createProductDto.unitPrice,
-            amount: createProductDto.amount,
+            ...createProductDto,
             isPurchased: createProductDto.isPurchased || false,
             subTotal: createProductDto.unitPrice * createProductDto.amount,
-            note: createProductDto.note || null,
           },
         });
 
@@ -50,63 +41,33 @@ export class ProductsService {
           },
         });
 
-        return {
-          product,
-          err: null,
-        };
+        return product;
       });
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        product: null,
-        err: err.message,
-      };
+
+      return product;
+    } catch (error) {
+      this.logger.error(`Failed to create product: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to create product');
     }
   }
 
-  async FindAllProducts(
-    user: User,
-  ): Promise<{ products: Product[]; err: string }> {
+  async findAllProducts(user: User): Promise<Product[]> {
+    this.logger.log(`Attempting to find all products for user: ${user.id}`);
     try {
-      if (user.role === 'ADMIN') {
-        const products = await this.databaseService.product.findMany({
-          include: {
-            category: true,
-          },
-        });
+      const products = await this.databaseService.product.findMany({
+        where: user.role === 'USER' ? { userId: user.id } : {},
+        include: { category: true },
+      });
 
-        return {
-          products,
-          err: null,
-        };
-      } else if (user.role === 'USER') {
-        const products = await this.databaseService.product.findMany({
-          where: {
-            userId: user.id,
-          },
-          include: {
-            category: true,
-          },
-        });
-
-        return {
-          products,
-          err: null,
-        };
-      }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        products: null,
-        err: err.message,
-      };
+      return products;
+    } catch (error) {
+      this.logger.error(`Failed to fetch products: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to fetch products');
     }
   }
 
-  async FindProductById(
-    id: number,
-    user: User,
-  ): Promise<{ product: Product; err: string }> {
+  async findProductById(id: number, user: User): Promise<Product> {
+    this.logger.log(`Attempting to find product with id: ${id}`);
     try {
       const product = await this.databaseService.product.findUnique({
         where: { id },
@@ -114,202 +75,99 @@ export class ProductsService {
       });
 
       if (!product) {
-        return { product: null, err: 'not found this product' };
+        throw new NotFoundException('Product not found');
       }
 
       if (user.role === 'USER' && product.userId !== user.id) {
-        return {
-          product: null,
-          err: 'You are not authorized to access this product',
-        };
+        throw new ForbiddenException('You are not authorized to access this product');
       }
 
-      return { product, err: null };
-    } catch (err) {
-      console.log('Error: ', err);
-      return { product: null, err: err.message };
+      return product;
+    } catch (error) {
+      this.logger.error(`Failed to fetch product: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async FindAllProductsByUserId(
-    userId: number,
-    user: User,
-  ): Promise<{ products: Product[]; err: string }> {
+  async updateProductById(id: number, updateProductDto: UpdateProductDto, user: User): Promise<Product> {
+    this.logger.log(`Attempting to update product with id: ${id}`);
     try {
-      if (user.role === 'ADMIN') {
-        const products = await this.databaseService.product.findMany({
-          where: {
-            userId,
-          },
-        });
+      const existingProduct = await this.databaseService.product.findUnique({ where: { id } });
 
-        return {
-          products,
-          err: null,
-        };
-      } else if (user.role === 'USER') {
-        return {
-          products: [],
-          err: 'You are not authorized to access this product',
-        };
+      if (!existingProduct) {
+        throw new NotFoundException('Product not found');
       }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        products: null,
-        err: err.message,
-      };
-    }
-  }
 
-  async FindAllProductsByCategoryId(
-    categoryId: number,
-    user: User,
-  ): Promise<{ products: Product[]; err: string }> {
-    try {
-      if (user.role === 'ADMIN') {
-        const products = await this.databaseService.product.findMany({
-          where: {
-            categoryId,
-          },
-          include: {
-            category: true,
-          },
-        });
-
-        return {
-          products,
-          err: null,
-        };
-      } else if (user.role === 'USER') {
-        const products = await this.databaseService.product.findMany({
-          where: {
-            categoryId,
-            userId: user.id,
-          },
-          include: {
-            category: true,
-          },
-        });
-        return {
-          products,
-          err: null,
-        };
+      if (user.role !== 'ADMIN' && existingProduct.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to update this product');
       }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        products: null,
-        err: err.message,
-      };
-    }
-  }
 
-  async UpdateProductById(
-    id: number,
-    updateProductDto: UpdateProductDto,
-    user: User,
-  ): Promise<{ product: Product; err: string }> {
-    try {
-      const existed = await this.databaseService.product.findUnique({
-        where: {
-          id,
-        },
+      const updatedProduct = await this.databaseService.product.update({
+        where: { id },
+        data: updateProductDto,
       });
 
-      if (!existed) {
-        return {
-          product: null,
-          err: 'not found this product',
-        };
-      }
-
-      if (user.role === 'ADMIN') {
-        const product = await this.databaseService.product.update({
-          where: {
-            id,
-          },
-          data: updateProductDto,
-        });
-
-        return {
-          product,
-          err: null,
-        };
-      } else if (user.role === 'USER') {
-        if (existed.userId !== user.id) {
-          return {
-            product: null,
-            err: 'You are not authorized to access this product',
-          };
-        }
-        const product = await this.databaseService.product.update({
-          where: {
-            id,
-          },
-          data: updateProductDto,
-        });
-
-        return {
-          product,
-          err: null,
-        };
-      }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        product: null,
-        err: err.message,
-      };
+      return updatedProduct;
+    } catch (error) {
+      this.logger.error(`Failed to update product: ${error.message}`, error.stack);
+      throw error;
     }
   }
 
-  async DeleteProductById(id: number, user: User): Promise<{ err: string }> {
+  async deleteProductById(id: number, user: User): Promise<void> {
+    this.logger.log(`Attempting to delete product with id: ${id}`);
     try {
-      const existed = await this.databaseService.product.findUnique({
-        where: {
-          id,
-        },
+      const existingProduct = await this.databaseService.product.findUnique({ where: { id } });
+
+      if (!existingProduct) {
+        throw new NotFoundException('Product not found');
+      }
+
+      if (user.role !== 'ADMIN' && existingProduct.userId !== user.id) {
+        throw new ForbiddenException('You are not authorized to delete this product');
+      }
+
+      await this.databaseService.product.delete({ where: { id } });
+    } catch (error) {
+      this.logger.error(`Failed to delete product: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  async findAllProductsByUserId(userId: number, user: User): Promise<Product[]> {
+    this.logger.log(`Attempting to find all products for user with id: ${userId}`);
+    try {
+      if (user.role !== 'ADMIN' && user.id !== userId) {
+        throw new ForbiddenException('You are not authorized to access these products');
+      }
+
+      const products = await this.databaseService.product.findMany({
+        where: { userId },
+        include: { category: true },
       });
 
-      if (!existed) {
-        return {
-          err: 'not found this product',
-        };
-      }
+      return products;
+    } catch (error) {
+      this.logger.error(`Failed to fetch products: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 
-      if (user.role === 'ADMIN') {
-        await this.databaseService.product.delete({
-          where: {
-            id,
-          },
-        });
+  async findAllProductsByCategoryId(categoryId: number, user: User): Promise<Product[]> {
+    this.logger.log(`Attempting to find all products for category with id: ${categoryId}`);
+    try {
+      const products = await this.databaseService.product.findMany({
+        where: {
+          categoryId,
+          ...(user.role === 'USER' ? { userId: user.id } : {}),
+        },
+        include: { category: true },
+      });
 
-        return {
-          err: null,
-        };
-      } else if (user.role === 'USER') {
-        if (existed.userId !== user.id) {
-          return {
-            err: 'You are not authorized to access this product',
-          };
-        }
-
-        await this.databaseService.product.delete({
-          where: {
-            id,
-          },
-        });
-
-        return {
-          err: null,
-        };
-      }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        err: err.message,
-      };
+      return products;
+    } catch (error) {
+      this.logger.error(`Failed to fetch products: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to fetch products');
     }
   }
 }
