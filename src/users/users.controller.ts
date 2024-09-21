@@ -17,7 +17,14 @@ import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @ApiTags('users')
@@ -51,16 +58,26 @@ export class UsersController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a user' })
-  @ApiResponse({ status: 200, description: 'The user has been successfully updated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The user has been successfully updated.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: UpdateUserDto })
-  async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @Request() req,
+  ) {
     return this.usersService.updateUserById(+id, updateUserDto, req.user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a user' })
-  @ApiResponse({ status: 204, description: 'The user has been successfully deleted.' })
+  @ApiResponse({
+    status: 204,
+    description: 'The user has been successfully deleted.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string, @Request() req) {
@@ -76,38 +93,55 @@ export class UsersController {
   }
 
   @Get(':id/address')
-  @ApiOperation({ summary: 'Get a user\'s address by user ID' })
-  @ApiResponse({ status: 200, description: 'Returns the user\'s address.' })
+  @ApiOperation({ summary: "Get a user's address by user ID" })
+  @ApiResponse({ status: 200, description: "Returns the user's address." })
   @ApiParam({ name: 'id', type: 'string' })
   async getUserAddress(@Param('id') id: string, @Request() req) {
     return this.usersService.findAddressByUserId(+id, req.user);
   }
 
   @Post(':id/address')
-  @ApiOperation({ summary: 'Create a user\'s address' })
-  @ApiResponse({ status: 201, description: 'The address has been successfully created.' })
+  @ApiOperation({ summary: "Create a user's address" })
+  @ApiResponse({
+    status: 201,
+    description: 'The address has been successfully created.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: CreateAddressDto })
-  async createUserAddress(@Param('id') id: string, @Body() createAddressDto: CreateAddressDto, @Request() req) {
-    return this.usersService.insertAddress(createAddressDto);
+  async createUserAddress(
+    @Param('id') id: string,
+    @Body() createAddressDto: CreateAddressDto,
+    @Request() req,
+  ) {
+    return this.usersService.insertAddress(createAddressDto, req.user);
   }
 
   @Patch(':id/address')
-  @ApiOperation({ summary: 'Update a user\'s address' })
-  @ApiResponse({ status: 200, description: 'The address has been successfully updated.' })
+  @ApiOperation({ summary: "Update a user's address" })
+  @ApiResponse({
+    status: 200,
+    description: 'The address has been successfully updated.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: UpdateAddressDto })
   async updateUserAddress(
     @Param('id') id: string,
     @Body() updateAddressDto: UpdateAddressDto,
-    @Request() req
+    @Request() req,
   ) {
-    return this.usersService.updateAddressByUserId(+id, updateAddressDto, req.user);
+    return this.usersService.updateAddressByUserId(
+      +id,
+      updateAddressDto,
+      req.user,
+    );
   }
 
   @Delete(':id/address')
-  @ApiOperation({ summary: 'Delete a user\'s address' })
-  @ApiResponse({ status: 204, description: 'The address has been successfully deleted.' })
+  @ApiOperation({ summary: "Delete a user's address" })
+  @ApiResponse({
+    status: 204,
+    description: 'The address has been successfully deleted.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUserAddress(@Param('id') id: string, @Request() req) {

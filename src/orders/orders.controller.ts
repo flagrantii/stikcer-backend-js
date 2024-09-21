@@ -17,7 +17,14 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -28,7 +35,10 @@ export class OrdersController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new order' })
-  @ApiResponse({ status: 201, description: 'The order has been successfully created.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The order has been successfully created.',
+  })
   @ApiBody({ type: CreateOrderDto })
   async createOrder(@Body() createOrderDto: CreateOrderDto, @Request() req) {
     return this.ordersService.createOrder(createOrderDto, req.user);
@@ -44,7 +54,10 @@ export class OrdersController {
 
   @Get('user/:userId')
   @ApiOperation({ summary: 'Get orders by user ID' })
-  @ApiResponse({ status: 200, description: 'Returns orders for the specified user.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns orders for the specified user.',
+  })
   @ApiParam({ name: 'userId', type: 'string' })
   async getOrdersByUserId(@Param('userId') userId: string, @Request() req) {
     return this.ordersService.findOrdersByUserId(+userId, req.user);
@@ -60,16 +73,26 @@ export class OrdersController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an order' })
-  @ApiResponse({ status: 200, description: 'The order has been successfully updated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The order has been successfully updated.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: UpdateOrderDto })
-  async updateOrder(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @Request() req) {
+  async updateOrder(
+    @Param('id') id: string,
+    @Body() updateOrderDto: UpdateOrderDto,
+    @Request() req,
+  ) {
     return this.ordersService.updateOrderById(+id, updateOrderDto, req.user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete an order' })
-  @ApiResponse({ status: 204, description: 'The order has been successfully deleted.' })
+  @ApiResponse({
+    status: 204,
+    description: 'The order has been successfully deleted.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteOrder(@Param('id') id: string, @Request() req) {

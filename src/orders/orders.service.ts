@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { Order, User } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -11,7 +17,10 @@ export class OrdersService {
 
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async createOrder(createOrderDto: CreateOrderDto, user: User): Promise<Order> {
+  async createOrder(
+    createOrderDto: CreateOrderDto,
+    user: User,
+  ): Promise<Order> {
     this.logger.log(`Attempting to create a new order for user: ${user.id}`);
     try {
       const orderId = parseInt(uuid.v4().replace(/-/g, ''), 16);
@@ -23,9 +32,11 @@ export class OrdersService {
             where: { id: item.productId },
           });
           if (!product) {
-            throw new NotFoundException(`Product with id ${item.productId} not found`);
+            throw new NotFoundException(
+              `Product with id ${item.productId} not found`,
+            );
           }
-          subTotal += product.unitPrice * product.amount
+          subTotal += product.unitPrice * product.amount;
         }
 
         const order = await prisma.order.create({
@@ -38,7 +49,7 @@ export class OrdersService {
             paymentId: createOrderDto.paymentId,
             status: createOrderDto.status,
             orderLines: {
-              create: createOrderDto.items.map(item => ({
+              create: createOrderDto.items.map((item) => ({
                 productId: item.productId,
                 orderId: orderId,
               })),
@@ -50,7 +61,10 @@ export class OrdersService {
         return order;
       });
     } catch (error) {
-      this.logger.error(`Failed to create order: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create order: ${error.message}`,
+        error.stack,
+      );
       throw new InternalServerErrorException('Failed to create order');
     }
   }
@@ -59,14 +73,19 @@ export class OrdersService {
     this.logger.log(`Attempting to find all orders for user: ${user.id}`);
     try {
       if (user.role !== 'ADMIN') {
-        throw new ForbiddenException('You are not authorized to access all orders');
+        throw new ForbiddenException(
+          'You are not authorized to access all orders',
+        );
       }
       const orders = await this.databaseService.order.findMany({
         include: { orderLines: true },
       });
       return orders;
     } catch (error) {
-      this.logger.error(`Failed to fetch orders: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch orders: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -75,7 +94,9 @@ export class OrdersService {
     this.logger.log(`Attempting to find orders for user with id: ${userId}`);
     try {
       if (user.role !== 'ADMIN' && user.id !== userId) {
-        throw new ForbiddenException('You are not authorized to access these orders');
+        throw new ForbiddenException(
+          'You are not authorized to access these orders',
+        );
       }
       const orders = await this.databaseService.order.findMany({
         where: { userId },
@@ -83,7 +104,10 @@ export class OrdersService {
       });
       return orders;
     } catch (error) {
-      this.logger.error(`Failed to fetch orders: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch orders: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -101,7 +125,9 @@ export class OrdersService {
       }
 
       if (user.role !== 'ADMIN' && order.userId !== user.id) {
-        throw new ForbiddenException('You are not authorized to access this order');
+        throw new ForbiddenException(
+          'You are not authorized to access this order',
+        );
       }
 
       return order;
@@ -111,7 +137,11 @@ export class OrdersService {
     }
   }
 
-  async updateOrderById(id: number, updateOrderDto: UpdateOrderDto, user: User): Promise<Order> {
+  async updateOrderById(
+    id: number,
+    updateOrderDto: UpdateOrderDto,
+    user: User,
+  ): Promise<Order> {
     this.logger.log(`Attempting to update order with id: ${id}`);
     try {
       const existingOrder = await this.databaseService.order.findUnique({
@@ -124,7 +154,9 @@ export class OrdersService {
       }
 
       if (user.role !== 'ADMIN' && existingOrder.userId !== user.id) {
-        throw new ForbiddenException('You are not authorized to update this order');
+        throw new ForbiddenException(
+          'You are not authorized to update this order',
+        );
       }
 
       const updatedOrder = await this.databaseService.order.update({
@@ -135,7 +167,10 @@ export class OrdersService {
 
       return updatedOrder;
     } catch (error) {
-      this.logger.error(`Failed to update order: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update order: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -143,19 +178,26 @@ export class OrdersService {
   async deleteOrderById(id: number, user: User): Promise<void> {
     this.logger.log(`Attempting to delete order with id: ${id}`);
     try {
-      const existingOrder = await this.databaseService.order.findUnique({ where: { id } });
+      const existingOrder = await this.databaseService.order.findUnique({
+        where: { id },
+      });
 
       if (!existingOrder) {
         throw new NotFoundException('Order not found');
       }
 
       if (user.role !== 'ADMIN' && existingOrder.userId !== user.id) {
-        throw new ForbiddenException('You are not authorized to delete this order');
+        throw new ForbiddenException(
+          'You are not authorized to delete this order',
+        );
       }
 
       await this.databaseService.order.delete({ where: { id } });
     } catch (error) {
-      this.logger.error(`Failed to delete order: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to delete order: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

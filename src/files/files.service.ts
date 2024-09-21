@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { S3Service } from '../s3/s3.service';
 import { File, User } from '@prisma/client';
@@ -12,10 +18,14 @@ export class FilesService {
 
   constructor(
     private readonly databaseService: DatabaseService,
-    private readonly s3Service: S3Service
+    private readonly s3Service: S3Service,
   ) {}
 
-  async uploadFile(createFileDto: CreateFileDto, file: Express.Multer.File, user: User): Promise<File> {
+  async uploadFile(
+    createFileDto: CreateFileDto,
+    file: Express.Multer.File,
+    user: User,
+  ): Promise<File> {
     this.logger.log(`Attempting to upload a new file for user: ${user.id}`);
     try {
       const { key, size, type } = await this.s3Service.uploadFile(file);
@@ -42,7 +52,10 @@ export class FilesService {
     }
   }
 
-  async getFilesFromProductId(productId: number, user: User): Promise<Array<{ file: File; url: string }>> {
+  async getFilesFromProductId(
+    productId: number,
+    user: User,
+  ): Promise<Array<{ file: File; url: string }>> {
     this.logger.log(`Attempting to get files for product: ${productId}`);
     try {
       const files = await this.databaseService.file.findMany({
@@ -62,24 +75,33 @@ export class FilesService {
       }
 
       if (user.role !== 'ADMIN' && product.userId !== user.id) {
-        throw new ForbiddenException('You are not authorized to access these files');
+        throw new ForbiddenException(
+          'You are not authorized to access these files',
+        );
       }
 
       const filesWithUrls = await Promise.all(
         files.map(async (file) => {
           const { url } = await this.s3Service.getPresignedUrl(file.key);
           return { file, url };
-        })
+        }),
       );
 
       return filesWithUrls;
     } catch (error) {
-      this.logger.error(`Failed to get files for productId: ${productId}`, error.stack);
+      this.logger.error(
+        `Failed to get files for productId: ${productId}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
-  async updateFile(id: number, updateFileDto: UpdateFileDto, user: User): Promise<File> {
+  async updateFile(
+    id: number,
+    updateFileDto: UpdateFileDto,
+    user: User,
+  ): Promise<File> {
     this.logger.log(`Attempting to update file with id: ${id}`);
     try {
       const existingFile = await this.databaseService.file.findUnique({
@@ -91,7 +113,9 @@ export class FilesService {
       }
 
       if (user.role !== 'ADMIN' && existingFile.userId !== user.id) {
-        throw new ForbiddenException('You are not authorized to update this file');
+        throw new ForbiddenException(
+          'You are not authorized to update this file',
+        );
       }
 
       const updatedFile = await this.databaseService.file.update({
@@ -119,7 +143,9 @@ export class FilesService {
       }
 
       if (user.role !== 'ADMIN' && existingFile.userId !== user.id) {
-        throw new ForbiddenException('You are not authorized to delete this file');
+        throw new ForbiddenException(
+          'You are not authorized to delete this file',
+        );
       }
 
       await this.s3Service.deleteFile(existingFile.key);

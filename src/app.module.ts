@@ -17,7 +17,6 @@ import { AuthorizeAdmin } from './middleware/authorizeAdmin';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { CategoriesModule } from './categories/categories.module';
-import { AuthorizeUser } from './middleware/authorizeUser';
 import { FilesService } from './files/files.service';
 import { FilesController } from './files/files.controller';
 import { FilesModule } from './files/files.module';
@@ -62,9 +61,7 @@ export class AppModule implements NestModule {
 
     consumer
       .apply(AuthorizeAdmin)
-      .forRoutes(
-        { path: 'users', method: RequestMethod.GET },
-      );
+      .forRoutes({ path: 'users', method: RequestMethod.GET });
 
     // Remove AuthorizeUser middleware from here
   }

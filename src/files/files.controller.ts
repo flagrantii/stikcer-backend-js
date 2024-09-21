@@ -1,10 +1,32 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, HttpStatus, HttpCode, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  HttpStatus,
+  HttpCode,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { FilesService } from './files.service';
 import { CreateFileDto } from '../files/dto/create-file';
 import { UpdateFileDto } from '../files/dto/update-file';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('files')
@@ -17,7 +39,10 @@ export class FilesController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Upload a new file' })
-  @ApiResponse({ status: 201, description: 'The file has been successfully uploaded.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The file has been successfully uploaded.',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -36,30 +61,50 @@ export class FilesController {
       },
     },
   })
-  async uploadFile(@UploadedFile() file: Express.Multer.File, @Body() createFileDto: CreateFileDto, @Request() req) {
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createFileDto: CreateFileDto,
+    @Request() req,
+  ) {
     return this.filesService.uploadFile(createFileDto, file, req.user);
   }
 
   @Get('product/:productId')
   @ApiOperation({ summary: 'Get files by product ID' })
-  @ApiResponse({ status: 200, description: 'Returns files for the specified product.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns files for the specified product.',
+  })
   @ApiParam({ name: 'productId', type: 'string' })
-  async getFilesByProductId(@Param('productId') productId: string, @Request() req) {
+  async getFilesByProductId(
+    @Param('productId') productId: string,
+    @Request() req,
+  ) {
     return this.filesService.getFilesFromProductId(+productId, req.user);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a file' })
-  @ApiResponse({ status: 200, description: 'The file has been successfully updated.' })
+  @ApiResponse({
+    status: 200,
+    description: 'The file has been successfully updated.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: UpdateFileDto })
-  async updateFile(@Param('id') id: string, @Body() updateFileDto: UpdateFileDto, @Request() req) {
+  async updateFile(
+    @Param('id') id: string,
+    @Body() updateFileDto: UpdateFileDto,
+    @Request() req,
+  ) {
     return this.filesService.updateFile(+id, updateFileDto, req.user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a file' })
-  @ApiResponse({ status: 204, description: 'The file has been successfully deleted.' })
+  @ApiResponse({
+    status: 204,
+    description: 'The file has been successfully deleted.',
+  })
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteFile(@Param('id') id: string, @Request() req) {
