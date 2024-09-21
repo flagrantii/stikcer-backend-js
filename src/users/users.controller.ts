@@ -6,361 +6,102 @@ import {
   Patch,
   Param,
   Delete,
-  Res,
-  Req,
+  UseGuards,
+  Request,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Request, Response } from 'express';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
+@ApiTags('users')
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
-  async GetProfile(@Req() req: Request, @Res() res: Response) {
-    const { user, err } = await this.usersService.FindUserProfile(
-      req['user'].id,
-    );
-    if (err !== null) {
-      return res.status(400).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: user,
-      });
-    }
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Returns the user profile.' })
+  async getProfile(@Request() req) {
+    return this.usersService.findUserProfile(req.user.id, req.user);
   }
 
   @Get('me/address')
-  async GetAddress(@Req() req: Request, @Res() res: Response) {
-    const { address, err } = await this.usersService.FindAddressByUserId(
-      req['user'].id,
-    );
-    if (err !== null) {
-      return res.status(400).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: address,
-      });
-    }
-  }
-
-  @Post('me/address')
-  async CreateAddress(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() createAddressDto: CreateAddressDto,
-  ) {
-    createAddressDto.userId = req['user'].id;
-
-    const { address, err } =
-      await this.usersService.InsertAddress(createAddressDto);
-    if (err !== null) {
-      return res.status(500).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(201).json({
-        success: true,
-        data: address,
-      });
-    }
-  }
-
-  @Patch('me/address')
-  async UpdateAddressById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() updateAddressDto: UpdateAddressDto,
-  ) {
-    const { address, err } = await this.usersService.UpdateAddressByUserId(
-      req['user'].id,
-      updateAddressDto,
-      req,
-    );
-    if (err !== null) {
-      return res.status(400).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: address,
-      });
-    }
-  }
-
-  @Delete('me/address')
-  async DeleteAddress(@Req() req: Request, @Res() res: Response) {
-    const { err } = await this.usersService.DeleteAddressByUserId(
-      req['user'].id,
-      req,
-    );
-    if (err !== null) {
-      return res.status(400).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: {},
-      });
-    }
+  @ApiOperation({ summary: 'Get current user address' })
+  @ApiResponse({ status: 200, description: 'Returns the user address.' })
+  async getAddress(@Request() req) {
+    return this.usersService.findAddressByUserId(req.user.id, req.user);
   }
 
   @Get()
-  async GetAllUsers(@Req() req: Request, @Res() res: Response) {
-    const { users, err } = await this.usersService.FindAllUsers(req);
-    if (err !== null) {
-      switch (err) {
-        case 'not found any user':
-          return res.status(404).json({
-            success: false,
-            message: err,
-            data: [],
-          });
-        default:
-          return res.status(500).json({
-            success: false,
-            message: err,
-          });
-      }
-    } else {
-      return res.status(200).json({
-        success: true,
-        amount: users.length,
-        data: users,
-      });
-    }
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Get all users' })
+  @ApiResponse({ status: 200, description: 'Returns all users.' })
+  async getAllUsers(@Request() req) {
+    return this.usersService.findAllUsers(req.user);
   }
 
-  @Patch(':userId')
-  async UpdateUserById(
-    @Req() req: Request,
-    @Res() res: Response,
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a user' })
+  @ApiResponse({ status: 200, description: 'The user has been successfully updated.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: UpdateUserDto })
+  async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
+    return this.usersService.updateUserById(+id, updateUserDto, req.user);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiResponse({ status: 204, description: 'The user has been successfully deleted.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteUser(@Param('id') id: string, @Request() req) {
+    await this.usersService.deleteUserById(+id, req.user);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a user by ID' })
+  @ApiResponse({ status: 200, description: 'Returns the user.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async getUserById(@Param('id') id: string, @Request() req) {
+    return this.usersService.findUserProfile(+id, req.user);
+  }
+
+  @Get(':id/address')
+  @ApiOperation({ summary: 'Get a user\'s address by user ID' })
+  @ApiResponse({ status: 200, description: 'Returns the user\'s address.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  async getUserAddress(@Param('id') id: string, @Request() req) {
+    return this.usersService.findAddressByUserId(+id, req.user);
+  }
+
+  @Patch(':id/address')
+  @ApiOperation({ summary: 'Update a user\'s address' })
+  @ApiResponse({ status: 200, description: 'The address has been successfully updated.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({ type: UpdateAddressDto })
+  async updateUserAddress(
     @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    const { user, err } = await this.usersService.UpdateUserById(
-      +id,
-      updateUserDto,
-      req,
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this user':
-          statusCode = 404;
-          break;
-        case 'you are not authorized to access this user':
-          statusCode = 401;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: user,
-      });
-    }
-  }
-
-  @Delete(':userId')
-  async DeleteUserById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('id') id: string,
-  ) {
-    const { err } = await this.usersService.DeleteUserById(+id, req);
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this user':
-          statusCode = 404;
-          break;
-        case 'you are not authorized to access this user':
-          statusCode = 401;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: {},
-      });
-    }
-  }
-
-  @Get(':userId')
-  async GetUserById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('id') id: string,
-  ) {
-    const { user, err } = await this.usersService.FindUserProfile(+id);
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this user':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: user,
-      });
-    }
-  }
-
-  @Get(':userId/address')
-  async GetUserAddress(@Res() res: Response, @Param('id') id: string) {
-    const { address, err } = await this.usersService.FindAddressByUserId(+id);
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this user':
-          statusCode = 404;
-          break;
-        case 'not found any address':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: address,
-      });
-    }
-  }
-
-  @Get(':userId/address')
-  async GetUserAddressById(@Res() res: Response, @Param('id') id: string) {
-    const { address, err } = await this.usersService.FindAddressByUserId(+id);
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this address':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: address,
-      });
-    }
-  }
-
-  @Patch(':userId/address')
-  async UpdateUserAddressById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('addressId') addressId: string,
     @Body() updateAddressDto: UpdateAddressDto,
+    @Request() req
   ) {
-    const { address, err } = await this.usersService.UpdateAddressByUserId(
-      +addressId,
-      updateAddressDto,
-      req,
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this address':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: address,
-      });
-    }
+    return this.usersService.updateAddressByUserId(+id, updateAddressDto, req.user);
   }
 
-  @Delete(':userId/address')
-  async DeleteUserAddressById(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('addressId') addressId: string,
-  ) {
-    const { err } = await this.usersService.DeleteAddressByUserId(
-      +addressId,
-      req,
-    );
-    if (err !== null) {
-      let statusCode: number;
-      switch (err) {
-        case 'not found this address':
-          statusCode = 404;
-          break;
-        default:
-          statusCode = 500;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      return res.status(200).json({
-        success: true,
-        data: {},
-      });
-    }
+  @Delete(':id/address')
+  @ApiOperation({ summary: 'Delete a user\'s address' })
+  @ApiResponse({ status: 204, description: 'The address has been successfully deleted.' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteUserAddress(@Param('id') id: string, @Request() req) {
+    await this.usersService.deleteAddressByUserId(+id, req.user);
   }
 }

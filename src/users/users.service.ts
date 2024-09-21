@@ -1,326 +1,131 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, Logger } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DatabaseService } from 'src/database/database.service';
+import { DatabaseService } from '../database/database.service';
 import { Address, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { CreateAddressDto } from './dto/create-address.dto';
-import { Request } from 'express';
 import { UpdateAddressDto } from './dto/update-address.dto';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async FindUserProfile(id: number): Promise<{ user: User; err: string }> {
-    const user = await this.databaseService.user.findUnique({ where: { id } });
+  async findUserProfile(id: number, requestingUser: User): Promise<User> {
+    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== id) {
+      throw new UnauthorizedException('You are not authorized to access this user');
+    }
+    const user = await this.databaseService.user.findUnique({ where: { id: id } });
     if (!user) {
-      return {
-        user: null,
-        err: 'not found this user',
-      };
+      throw new NotFoundException('User not found');
     }
-
     delete user.password;
-
-    return {
-      user,
-      err: null,
-    };
+    return user;
   }
 
-  async FindAllUsers(req: Request): Promise<{ users: User[]; err: string }> {
-    try {
-      const users = await this.databaseService.user.findMany();
-      if (!users) {
-        return {
-          users: null,
-          err: 'not found any user',
-        };
-      }
-
-      if (req['user'].role !== 'ADMIN') {
-        throw new UnauthorizedException(
-          'You are not authorized to access this resource',
-        );
-      }
-
-      return {
-        users,
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        users: null,
-        err: err,
-      };
+  async findAllUsers(requestingUser: User): Promise<User[]> {
+    if (requestingUser.role !== 'ADMIN') {
+      throw new UnauthorizedException('You are not authorized to access this resource');
     }
+    return this.databaseService.user.findMany();
   }
 
-  async UpdateUserById(
-    id: number,
-    updateUserDto: UpdateUserDto,
-    req: Request,
-  ): Promise<{ user: User; err: string }> {
-    try {
-      const existingUser = await this.databaseService.user.findUnique({
-        where: { id },
-      });
-
-      if (!existingUser) {
-        throw new NotFoundException('User not found');
-      }
-
-      if (req['user'].role !== 'ADMIN' && req['user'].id !== existingUser.id) {
-        throw new UnauthorizedException(
-          'You are not authorized to update this user',
-        );
-      }
-
-      if (updateUserDto.password) {
-        updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-      }
-
-      const updatedUser = await this.databaseService.user.update({
-        where: { id },
-        data: updateUserDto,
-      });
-
-      delete updatedUser.password;
-
-      return { user: updatedUser, err: null };
-    } catch (error) {
-      console.log('Error: ', error);
-      return { user: null, err: error.message };
-    }
-  }
-
-  async DeleteUserById(id: number, req: Request): Promise<{ err: string }> {
-    const existingUser = await this.databaseService.user.findUnique({
-      where: { id },
-    });
-
+  async updateUserById(id: number, updateUserDto: UpdateUserDto, requestingUser: User): Promise<User> {
+    const existingUser = await this.databaseService.user.findUnique({ where: { id } });
     if (!existingUser) {
       throw new NotFoundException('User not found');
     }
 
-    if (req['user'].role !== 'ADMIN' && req['user'].id !== existingUser.id) {
-      throw new UnauthorizedException(
-        'You are not authorized to delete this user',
-      );
+    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== existingUser.id) {
+      throw new UnauthorizedException('You are not authorized to update this user');
     }
 
-    await this.databaseService.user.delete({
-      where: {
-        id,
-      },
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    const updatedUser = await this.databaseService.user.update({
+      where: { id },
+      data: updateUserDto,
     });
 
-    return {
-      err: null,
-    };
+    delete updatedUser.password;
+    return updatedUser;
   }
 
-  async InsertAddress(
-    addressDto: CreateAddressDto,
-  ): Promise<{ address: Address; err: string }> {
+  async deleteUserById(id: number, requestingUser: User): Promise<void> {
+    const existingUser = await this.databaseService.user.findUnique({ where: { id } });
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== existingUser.id) {
+      throw new UnauthorizedException('You are not authorized to delete this user');
+    }
+
+    await this.databaseService.user.delete({ where: { id } });
+  }
+
+  async insertAddress(addressDto: CreateAddressDto): Promise<Address> {
     try {
-      const address = await this.databaseService.address.create({
-        data: {
-          userId: addressDto.userId,
-          reciverName: addressDto.reciverName,
-          phone: addressDto.phone,
-          address: addressDto.address,
-          subDistrict: addressDto.subDistrict || null,
-          district: addressDto.district || null,
-          province: addressDto.province || null,
-          country: addressDto.country,
-          postalCode: addressDto.postalCode,
-          taxPayerId: addressDto.taxPayerId || null,
-          taxPayerName: addressDto.taxPayerName || null,
-        },
-      });
-
-      return {
-        address: address,
-        err: null,
-      };
-    } catch (err) {
-      let message = err.message;
-
-      if (err.code === 'P2002' && err.meta?.target?.includes('userId')) {
-        message = 'This user already has address.';
+      return await this.databaseService.address.create({ data: addressDto });
+    } catch (error) {
+      this.logger.error(`Failed to insert address: ${error.message}`, error.stack);
+      if (error.code === 'P2002' && error.meta?.target?.includes('userId')) {
+        throw new Error('This user already has an address.');
       }
-      console.log('Error: ', err);
-
-      return {
-        address: null,
-        err: message,
-      };
+      throw error;
     }
   }
 
-  async FindAddressByUserId(
-    userid: number,
-  ): Promise<{ address: Address; err: string }> {
-    try {
-      const address = await this.databaseService.address.findUnique({
-        where: {
-          userId: userid,
-        },
-      });
-
-      if (!address) {
-        return {
-          address: null,
-          err: 'not found this address',
-        };
-      }
-
-      return {
-        address,
-        err: null,
-      };
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        address: null,
-        err: err.message,
-      };
+  async findAddressByUserId(userId: number, requestingUser: User): Promise<Address> {
+    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== userId) {
+      throw new UnauthorizedException('You are not authorized to access this address');
     }
+    const address = await this.databaseService.address.findUnique({ where: { userId } });
+    if (!address) {
+      throw new NotFoundException('Address not found for this user');
+    }
+    return address;
   }
 
-  async UpdateAddressByUserId(
-    userid: number,
-    updateAddressDto: UpdateAddressDto,
-    req: Request,
-  ): Promise<{ address: Address; err: string }> {
-    try {
-      const existed = await this.databaseService.address.findUnique({
-        where: {
-          userId: userid,
-        },
-      });
-
-      // role: admin
-      if (req['user'].role === 'ADMIN') {
-        if (!existed) {
-          return {
-            address: null,
-            err: 'not found this address',
-          };
-        }
-
-        const address = await this.databaseService.address.update({
-          where: {
-            userId: userid,
-          },
-          data: updateAddressDto,
-        });
-
-        return {
-          address,
-          err: null,
-        };
-      }
-      // role: user
-      else if (req['user'].role === 'USER') {
-        // ownership validation
-        if (req['user'].id === userid) {
-          if (!existed) {
-            return {
-              address: null,
-              err: 'you have never added your address before, add now !',
-            };
-          }
-
-          const address = await this.databaseService.address.update({
-            where: {
-              userId: userid,
-            },
-            data: updateAddressDto,
-          });
-
-          return {
-            address,
-            err: null,
-          };
-        } else {
-          return {
-            address: null,
-            err: 'you are not authorized to access this address',
-          };
-        }
-      }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        address: null,
-        err: err.message,
-      };
+  async updateAddressByUserId(userId: number, updateAddressDto: UpdateAddressDto, requestingUser: User): Promise<Address> {
+    const existingAddress = await this.databaseService.address.findUnique({ where: { userId } });
+    
+    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== userId) {
+      throw new UnauthorizedException('You are not authorized to update this address');
     }
+
+    if (!existingAddress) {
+      if (requestingUser.role === 'ADMIN') {
+        throw new NotFoundException('Address not found for this user');
+      } else {
+        throw new NotFoundException('You have never added your address before. Please add an address first.');
+      }
+    }
+
+    return this.databaseService.address.update({
+      where: { userId },
+      data: updateAddressDto,
+    });
   }
 
-  async DeleteAddressByUserId(
-    userid: number,
-    req: Request,
-  ): Promise<{ err: string }> {
-    try {
-      const existed = await this.databaseService.address.findUnique({
-        where: {
-          userId: userid,
-        },
-      });
-
-      // role: admin
-      if (req['user'].role === 'ADMIN') {
-        if (!existed) {
-          return {
-            err: 'not found this address',
-          };
-        }
-
-        await this.databaseService.address.delete({
-          where: {
-            userId: userid,
-          },
-        });
-
-        return {
-          err: null,
-        };
-      }
-      // role: user
-      else if (req['user'].role === 'USER') {
-        // ownership validation
-        if (req['user'].id === userid) {
-          if (!existed) {
-            return {
-              err: 'you have never added your address before, add now !',
-            };
-          }
-
-          await this.databaseService.address.delete({
-            where: {
-              userId: userid,
-            },
-          });
-
-          return {
-            err: null,
-          };
-        } else {
-          return {
-            err: 'you are not authorized to access this address',
-          };
-        }
-      }
-    } catch (err) {
-      console.log('Error: ', err);
-      return {
-        err,
-      };
+  async deleteAddressByUserId(userId: number, requestingUser: User): Promise<void> {
+    const existingAddress = await this.databaseService.address.findUnique({ where: { userId } });
+    
+    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== userId) {
+      throw new UnauthorizedException('You are not authorized to delete this address');
     }
+
+    if (!existingAddress) {
+      if (requestingUser.role === 'ADMIN') {
+        throw new NotFoundException('Address not found for this user');
+      } else {
+        throw new NotFoundException('You have never added your address before.');
+      }
+    }
+
+    await this.databaseService.address.delete({ where: { userId } });
   }
 }
