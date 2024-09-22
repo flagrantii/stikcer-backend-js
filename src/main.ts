@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,8 +13,21 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(helmet());
 
-  // listen on port 3000 and set global prefix
-  app.setGlobalPrefix('api/v1');
+  // Set global prefix
+  const globalPrefix = 'api/v1';
+  app.setGlobalPrefix(globalPrefix);
+
+  const config = new DocumentBuilder()
+    .setTitle('E-commerce API')
+    .setDescription('API documentation for the e-commerce project')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup(`${globalPrefix}/docs`, app, document);
+
+  // listen on port from config
   await app.listen(configService.get('PORT'));
 }
 bootstrap();
