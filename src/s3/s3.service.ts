@@ -36,7 +36,7 @@ export class S3Service {
 
   async uploadFile(
     file: Express.Multer.File,
-  ): Promise<{ error: string; key: string; size: number; type: string }> {
+  ): Promise<{ error: string; key: string; size: number; type: string; displayName: string }> {
     try {
       const key = this.generateFileKey(file.originalname);
       const command = new PutObjectCommand({
@@ -49,6 +49,7 @@ export class S3Service {
       this.logger.log(`File uploaded: ${key}`, result);
       return {
         error: null,
+        displayName: file.originalname,
         key: key,
         size: file.size,
         type: file.mimetype,
