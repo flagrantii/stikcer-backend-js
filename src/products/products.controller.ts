@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import {
@@ -25,6 +24,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -59,7 +59,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Returns the product.' })
   @ApiParam({ name: 'id', type: 'string' })
   async getProductById(@Param('id') id: string, @Request() req) {
-    return this.productsService.findProductById(+id, req.user);
+    return this.productsService.findProductById(id, req.user);
   }
 
   @Patch(':id')
@@ -76,7 +76,7 @@ export class ProductsController {
     @Request() req,
   ) {
     return this.productsService.updateProductById(
-      +id,
+      id,
       updateProductDto,
       req.user,
     );
@@ -91,7 +91,7 @@ export class ProductsController {
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteProduct(@Param('id') id: string, @Request() req) {
-    await this.productsService.deleteProductById(+id, req.user);
+    await this.productsService.deleteProductById(id, req.user);
   }
 
   @Get('category/:categoryId')
@@ -106,7 +106,7 @@ export class ProductsController {
     @Request() req,
   ) {
     return this.productsService.findAllProductsByCategoryId(
-      +categoryId,
+      categoryId,
       req.user,
     );
   }
@@ -120,6 +120,6 @@ export class ProductsController {
   })
   @ApiParam({ name: 'userId', type: 'string' })
   async getProductsByUserId(@Param('userId') userId: string, @Request() req) {
-    return this.productsService.findAllProductsByUserId(+userId, req.user);
+    return this.productsService.findAllProductsByUserId(userId, req.user);
   }
 }

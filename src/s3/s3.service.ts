@@ -34,9 +34,13 @@ export class S3Service {
     return `${Date.now()}-${uuid.v4()}-${originalName}`;
   }
 
-  async uploadFile(
-    file: Express.Multer.File,
-  ): Promise<{ error: string; key: string; size: number; type: string; displayName: string }> {
+  async uploadFile(file: Express.Multer.File): Promise<{
+    error: string;
+    key: string;
+    size: number;
+    type: string;
+    displayName: string;
+  }> {
     try {
       const key = this.generateFileKey(file.originalname);
       const command = new PutObjectCommand({

@@ -21,14 +21,13 @@ export class FilesService {
     private readonly s3Service: S3Service,
   ) {}
 
-  async uploadFile(
-    createFileDto: CreateFileDto,
-    user: User,
-  ): Promise<File> {
+  async uploadFile(createFileDto: CreateFileDto, user: User): Promise<File> {
     this.logger.log(`Attempting to upload a new file for user: ${user.id}`);
     try {
-      const { key, size, type, displayName } = await this.s3Service.uploadFile(createFileDto.file);
-      const fileId = parseInt(uuid.v4().replace(/-/g, ''), 16);
+      const { key, size, type, displayName } = await this.s3Service.uploadFile(
+        createFileDto.file,
+      );
+      const fileId = uuid.v4();
 
       const createdFile = await this.databaseService.file.create({
         data: {
@@ -53,7 +52,7 @@ export class FilesService {
   }
 
   async getFilesFromProductId(
-    productId: number,
+    productId: string,
     user: User,
   ): Promise<Array<{ file: File; url: string }>> {
     this.logger.log(`Attempting to get files for product: ${productId}`);
@@ -98,9 +97,9 @@ export class FilesService {
   }
 
   async getFilesFromUserIdandCategoryId(
-    userId: number,
-    categoryId: number,
-    user: User
+    userId: string,
+    categoryId: string,
+    user: User,
   ): Promise<Array<{ file: File; url: string }>> {
     this.logger.log(`Attempting to get files for user: ${userId}`);
     try {
@@ -144,7 +143,7 @@ export class FilesService {
   }
 
   async updateFile(
-    id: number,
+    id: string,
     updateFileDto: UpdateFileDto,
     user: User,
   ): Promise<File> {
@@ -177,7 +176,7 @@ export class FilesService {
     }
   }
 
-  async deleteFile(id: number, user: User): Promise<void> {
+  async deleteFile(id: string, user: User): Promise<void> {
     this.logger.log(`Attempting to delete file with id: ${id}`);
     try {
       const existingFile = await this.databaseService.file.findUnique({

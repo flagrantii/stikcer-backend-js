@@ -23,7 +23,7 @@ export class OrdersService {
   ): Promise<Order> {
     this.logger.log(`Attempting to create a new order for user: ${user.id}`);
     try {
-      const orderId = parseInt(uuid.v4().replace(/-/g, ''), 16);
+      const orderId = uuid.v4();
 
       return await this.databaseService.$transaction(async (prisma) => {
         let subTotal = 0;
@@ -90,7 +90,7 @@ export class OrdersService {
     }
   }
 
-  async findOrdersByUserId(userId: number, user: User): Promise<Order[]> {
+  async findOrdersByUserId(userId: string, user: User): Promise<Order[]> {
     this.logger.log(`Attempting to find orders for user with id: ${userId}`);
     try {
       if (user.role !== 'ADMIN' && user.id !== userId) {
@@ -112,7 +112,7 @@ export class OrdersService {
     }
   }
 
-  async findOrderById(id: number, user: User): Promise<Order> {
+  async findOrderById(id: string, user: User): Promise<Order> {
     this.logger.log(`Attempting to find order with id: ${id}`);
     try {
       const order = await this.databaseService.order.findUnique({
@@ -138,7 +138,7 @@ export class OrdersService {
   }
 
   async updateOrderById(
-    id: number,
+    id: string,
     updateOrderDto: UpdateOrderDto,
     user: User,
   ): Promise<Order> {
@@ -175,7 +175,7 @@ export class OrdersService {
     }
   }
 
-  async deleteOrderById(id: number, user: User): Promise<void> {
+  async deleteOrderById(id: string, user: User): Promise<void> {
     this.logger.log(`Attempting to delete order with id: ${id}`);
     try {
       const existingOrder = await this.databaseService.order.findUnique({

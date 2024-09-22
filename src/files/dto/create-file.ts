@@ -1,19 +1,19 @@
 import { IsBoolean, IsNotEmpty, IsPositive, IsString } from 'class-validator';
 
 export class CreateFileDto {
-  id: number;
+  id: string;
 
   @IsNotEmpty()
   @IsPositive()
-  userId: number;
+  userId: string;
 
   @IsNotEmpty()
   @IsPositive()
-  productId: number;
+  productId: string;
 
   @IsNotEmpty()
   @IsPositive()
-  categoryId: number;
+  categoryId: string;
 
   @IsNotEmpty()
   @IsString()

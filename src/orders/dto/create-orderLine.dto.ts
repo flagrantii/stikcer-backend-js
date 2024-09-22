@@ -1,9 +1,9 @@
 import { IsNotEmpty, IsNumber } from 'class-validator';
 
 export class CreateOrderLineDto {
-  orderId: number;
+  orderId: string;
 
   @IsNumber()
   @IsNotEmpty()
-  readonly productId: number;
+  readonly productId: string;
 }

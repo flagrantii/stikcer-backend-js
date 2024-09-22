@@ -17,7 +17,7 @@ export class UsersService {
 
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findUserProfile(id: number, requestingUser: User): Promise<User> {
+  async findUserProfile(id: string, requestingUser: User): Promise<User> {
     this.logger.log(`Attempting to find user profile with id: ${id}`);
     try {
       if (requestingUser.role !== 'ADMIN' && requestingUser.id !== id) {
@@ -65,7 +65,7 @@ export class UsersService {
   }
 
   async updateUserById(
-    id: number,
+    id: string,
     updateUserDto: UpdateUserDto,
     requestingUser: User,
   ): Promise<User> {
@@ -104,7 +104,7 @@ export class UsersService {
     }
   }
 
-  async deleteUserById(id: number, requestingUser: User): Promise<void> {
+  async deleteUserById(id: string, requestingUser: User): Promise<void> {
     this.logger.log(`Attempting to delete user with id: ${id}`);
     try {
       const existingUser = await this.databaseService.user.findUnique({
@@ -152,7 +152,7 @@ export class UsersService {
   }
 
   async findAddressByUserId(
-    userId: number,
+    userId: string,
     requestingUser: User,
   ): Promise<Address> {
     this.logger.log(`Attempting to find address for user with id: ${userId}`);
@@ -176,7 +176,7 @@ export class UsersService {
   }
 
   async updateAddressByUserId(
-    userId: number,
+    userId: string,
     updateAddressDto: UpdateAddressDto,
     requestingUser: User,
   ): Promise<Address> {
@@ -216,7 +216,7 @@ export class UsersService {
   }
 
   async deleteAddressByUserId(
-    userId: number,
+    userId: string,
     requestingUser: User,
   ): Promise<void> {
     this.logger.log(`Attempting to delete address for user with id: ${userId}`);

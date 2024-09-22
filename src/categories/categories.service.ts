@@ -9,7 +9,7 @@ import { DatabaseService } from '../database/database.service';
 import { ProductCategory, User } from '@prisma/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-
+import * as uuid from 'uuid';
 @Injectable()
 export class CategoriesService {
   private readonly logger = new Logger(CategoriesService.name);
@@ -27,9 +27,12 @@ export class CategoriesService {
           'You are not authorized to create categories',
         );
       }
-
+      const categoryId = uuid.v4();
       const category = await this.databaseService.productCategory.create({
-        data: createCategoryDto,
+        data: {
+          ...createCategoryDto,
+          id: categoryId,
+        },
       });
 
       this.logger.log(`Category created successfully: ${category.id}`);
@@ -57,7 +60,7 @@ export class CategoriesService {
     }
   }
 
-  async findCategoryById(id: number): Promise<ProductCategory> {
+  async findCategoryById(id: string): Promise<ProductCategory> {
     this.logger.log(`Attempting to find category with id: ${id}`);
     try {
       const category = await this.databaseService.productCategory.findUnique({
@@ -79,7 +82,7 @@ export class CategoriesService {
   }
 
   async updateCategoryById(
-    id: number,
+    id: string,
     updateCategoryDto: UpdateCategoryDto,
     user: User,
   ): Promise<ProductCategory> {
@@ -118,7 +121,7 @@ export class CategoriesService {
     }
   }
 
-  async deleteCategoryById(id: number, user: User): Promise<void> {
+  async deleteCategoryById(id: string, user: User): Promise<void> {
     this.logger.log(`Attempting to delete category with id: ${id}`);
     try {
       if (user.role !== 'ADMIN') {

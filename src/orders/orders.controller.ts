@@ -60,7 +60,7 @@ export class OrdersController {
   })
   @ApiParam({ name: 'userId', type: 'string' })
   async getOrdersByUserId(@Param('userId') userId: string, @Request() req) {
-    return this.ordersService.findOrdersByUserId(+userId, req.user);
+    return this.ordersService.findOrdersByUserId(userId, req.user);
   }
 
   @Get(':id')
@@ -68,7 +68,7 @@ export class OrdersController {
   @ApiResponse({ status: 200, description: 'Returns the order.' })
   @ApiParam({ name: 'id', type: 'string' })
   async getOrderById(@Param('id') id: string, @Request() req) {
-    return this.ordersService.findOrderById(+id, req.user);
+    return this.ordersService.findOrderById(id, req.user);
   }
 
   @Patch(':id')
@@ -84,7 +84,7 @@ export class OrdersController {
     @Body() updateOrderDto: UpdateOrderDto,
     @Request() req,
   ) {
-    return this.ordersService.updateOrderById(+id, updateOrderDto, req.user);
+    return this.ordersService.updateOrderById(id, updateOrderDto, req.user);
   }
 
   @Delete(':id')
@@ -96,6 +96,6 @@ export class OrdersController {
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteOrder(@Param('id') id: string, @Request() req) {
-    await this.ordersService.deleteOrderById(+id, req.user);
+    await this.ordersService.deleteOrderById(id, req.user);
   }
 }

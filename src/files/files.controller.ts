@@ -82,7 +82,7 @@ export class FilesController {
     @Param('productId') productId: string,
     @Request() req,
   ) {
-    return this.filesService.getFilesFromProductId(+productId, req.user);
+    return this.filesService.getFilesFromProductId(productId, req.user);
   }
 
   @Get('blockprint')
@@ -99,8 +99,8 @@ export class FilesController {
     @Request() req,
   ) {
     return this.filesService.getFilesFromUserIdandCategoryId(
-      +userId,
-      +categoryId,
+      userId,
+      categoryId,
       req.user,
     );
   }
@@ -118,7 +118,7 @@ export class FilesController {
     @Body() updateFileDto: UpdateFileDto,
     @Request() req,
   ) {
-    return this.filesService.updateFile(+id, updateFileDto, req.user);
+    return this.filesService.updateFile(id, updateFileDto, req.user);
   }
 
   @Delete(':id')
@@ -130,6 +130,6 @@ export class FilesController {
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteFile(@Param('id') id: string, @Request() req) {
-    await this.filesService.deleteFile(+id, req.user);
+    await this.filesService.deleteFile(id, req.user);
   }
 }

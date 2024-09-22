@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -75,11 +76,13 @@ export class AuthService {
       if (existingUser) {
         throw new BadRequestException('User already exists');
       }
+      const userId = uuid.v4();
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
       const newUser = await this.databaseService.user.create({
         data: {
           ...registerDto,
           password: hashedPassword,
+          id: userId,
         },
       });
       const { password: _, ...result } = newUser;

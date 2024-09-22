@@ -69,7 +69,7 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @Request() req,
   ) {
-    return this.usersService.updateUserById(+id, updateUserDto, req.user);
+    return this.usersService.updateUserById(id, updateUserDto, req.user);
   }
 
   @Delete(':id')
@@ -81,7 +81,7 @@ export class UsersController {
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string, @Request() req) {
-    await this.usersService.deleteUserById(+id, req.user);
+    await this.usersService.deleteUserById(id, req.user);
   }
 
   @Get(':id')
@@ -89,7 +89,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Returns the user.' })
   @ApiParam({ name: 'id', type: 'string' })
   async getUserById(@Param('id') id: string, @Request() req) {
-    return this.usersService.findUserProfile(+id, req.user);
+    return this.usersService.findUserProfile(id, req.user);
   }
 
   @Get(':id/address')
@@ -97,7 +97,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: "Returns the user's address." })
   @ApiParam({ name: 'id', type: 'string' })
   async getUserAddress(@Param('id') id: string, @Request() req) {
-    return this.usersService.findAddressByUserId(+id, req.user);
+    return this.usersService.findAddressByUserId(id, req.user);
   }
 
   @Post(':id/address')
@@ -130,7 +130,7 @@ export class UsersController {
     @Request() req,
   ) {
     return this.usersService.updateAddressByUserId(
-      +id,
+      id,
       updateAddressDto,
       req.user,
     );
@@ -145,6 +145,6 @@ export class UsersController {
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUserAddress(@Param('id') id: string, @Request() req) {
-    await this.usersService.deleteAddressByUserId(+id, req.user);
+    await this.usersService.deleteAddressByUserId(id, req.user);
   }
 }

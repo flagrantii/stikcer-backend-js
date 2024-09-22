@@ -60,7 +60,7 @@ export class CategoriesController {
   @ApiResponse({ status: 200, description: 'Returns the category.' })
   @ApiParam({ name: 'id', type: 'string' })
   async getCategoryById(@Param('id') id: string) {
-    return this.categoriesService.findCategoryById(+id);
+    return this.categoriesService.findCategoryById(id);
   }
 
   @Patch(':id')
@@ -78,7 +78,7 @@ export class CategoriesController {
     @Request() req,
   ) {
     return this.categoriesService.updateCategoryById(
-      +id,
+      id,
       updateCategoryDto,
       req.user,
     );
@@ -94,6 +94,6 @@ export class CategoriesController {
   @ApiParam({ name: 'id', type: 'string' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteCategory(@Param('id') id: string, @Request() req) {
-    await this.categoriesService.deleteCategoryById(+id, req.user);
+    await this.categoriesService.deleteCategoryById(id, req.user);
   }
 }
