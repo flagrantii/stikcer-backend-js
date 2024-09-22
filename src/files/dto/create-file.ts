@@ -34,4 +34,11 @@ export class CreateFileDto {
   @IsNotEmpty()
   @IsBoolean()
   isPurchased: boolean;
+
+  @IsNotEmpty()
+  @IsString()
+  displayName: string;
+
+  @IsNotEmpty()
+  file: Express.Multer.File;
 }

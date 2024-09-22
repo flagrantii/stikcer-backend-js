@@ -23,12 +23,11 @@ export class FilesService {
 
   async uploadFile(
     createFileDto: CreateFileDto,
-    file: Express.Multer.File,
     user: User,
   ): Promise<File> {
     this.logger.log(`Attempting to upload a new file for user: ${user.id}`);
     try {
-      const { key, size, type } = await this.s3Service.uploadFile(file);
+      const { key, size, type, displayName } = await this.s3Service.uploadFile(createFileDto.file);
       const fileId = parseInt(uuid.v4().replace(/-/g, ''), 16);
 
       const createdFile = await this.databaseService.file.create({
@@ -41,6 +40,7 @@ export class FilesService {
           type: type,
           size: size,
           isPurchased: false,
+          displayName: displayName,
         },
       });
 

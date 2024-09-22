@@ -67,7 +67,8 @@ export class FilesController {
     @Body() createFileDto: CreateFileDto,
     @Request() req,
   ) {
-    return this.filesService.uploadFile(createFileDto, file, req.user);
+    createFileDto.file = file;
+    return this.filesService.uploadFile(createFileDto, req.user);
   }
 
   @Get('product/:productId')
