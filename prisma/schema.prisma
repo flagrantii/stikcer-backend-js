@@ -61,7 +61,7 @@ model Product {
   subTotal     Float
   note         String?
   orderLines   OrderLine[]
-  files        File[]
+  file         File?
   isPurchased  Boolean
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
@@ -79,9 +79,10 @@ model File {
   id          Int      @id @default(autoincrement())
   userId      Int
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId   Int
+  productId   Int      @unique
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   categoryId  Int
+  displayName String
   key         String
   type        String
   size        Int
