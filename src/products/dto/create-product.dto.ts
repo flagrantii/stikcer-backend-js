@@ -54,17 +54,5 @@ export class CreateProductDto {
   readonly note: string;
 
   @IsNotEmpty()
-  @IsString()
-  readonly fileUrl: string;
-
-  @IsNotEmpty()
-  @IsString()
-  readonly fileType: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  readonly fileSize: number;
-
-  @IsNotEmpty()
   isPurchased: boolean = false;
 }

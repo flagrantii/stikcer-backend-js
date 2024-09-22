@@ -37,20 +37,6 @@ export class ProductsService {
             },
           });
 
-          const fileId = parseInt(uuid.v4().replace(/-/g, ''), 16);
-          await prisma.file.create({
-            data: {
-              id: fileId,
-              productId: product.id,
-              categoryId: createProductDto.categoryId,
-              userId: user.id,
-              type: createProductDto.fileType,
-              isPurchased: false,
-              key: `${product.id}`,
-              size: createProductDto.fileSize,
-            },
-          });
-
           return product;
         },
       );
