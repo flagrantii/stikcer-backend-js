@@ -12,6 +12,7 @@ import {
   HttpCode,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { CreateFileDto } from '../files/dto/create-file';
@@ -81,6 +82,26 @@ export class FilesController {
     @Request() req,
   ) {
     return this.filesService.getFilesFromProductId(+productId, req.user);
+  }
+
+  @Get('blockprint')
+  @ApiOperation({ summary: 'Get all blockprint files' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all blockprint files.',
+  })
+  @ApiParam({ name: 'userId', type: 'string' })
+  @ApiParam({ name: 'categoryId', type: 'string' })
+  async getBlockprintFiles(
+    @Query('userId') userId: string,
+    @Query('categoryId') categoryId: string,
+    @Request() req,
+  ) {
+    return this.filesService.getFilesFromUserIdandCategoryId(
+      +userId,
+      +categoryId,
+      req.user,
+    );
   }
 
   @Patch(':id')

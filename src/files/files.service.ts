@@ -97,6 +97,52 @@ export class FilesService {
     }
   }
 
+  async getFilesFromUserIdandCategoryId(
+    userId: number,
+    categoryId: number,
+    user: User
+  ): Promise<Array<{ file: File; url: string }>> {
+    this.logger.log(`Attempting to get files for user: ${userId}`);
+    try {
+      const files = await this.databaseService.file.findMany({
+        where: { userId: userId, categoryId: categoryId },
+      });
+
+      if (files.length === 0) {
+        throw new NotFoundException('Files not found');
+      }
+
+      const category = await this.databaseService.productCategory.findUnique({
+        where: { id: categoryId },
+      });
+
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+
+      if (user.role !== 'ADMIN' && user.id !== userId) {
+        throw new ForbiddenException(
+          'You are not authorized to access these files',
+        );
+      }
+
+      const filesWithUrls = await Promise.all(
+        files.map(async (file) => {
+          const { url } = await this.s3Service.getPresignedUrl(file.key);
+          return { file, url };
+        }),
+      );
+
+      return filesWithUrls;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get files for user: ${userId} and category: ${categoryId}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
   async updateFile(
     id: number,
     updateFileDto: UpdateFileDto,
