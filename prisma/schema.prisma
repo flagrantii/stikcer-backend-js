@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
+  id        String  @id @default(cuid())
   role      String 
   firstName String
   lastName  String
@@ -27,8 +27,8 @@ model User {
 }
 
 model Address {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
+  id          String  @id @default(cuid())
+  userId      String  @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   reciverName String
   phone       String
@@ -45,10 +45,10 @@ model Address {
 }
 
 model Product {
-  categoryId   Int
+  categoryId   String
   category     ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  id           Int             @id @default(autoincrement())
-  userId       Int
+  id           String          @id @default(cuid())
+  userId       String
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   size         String
   material     String
@@ -68,7 +68,7 @@ model Product {
 }
 
 model ProductCategory {
-  id        Int       @id @default(autoincrement())
+  id        String  @id @default(cuid())
   name      String    @unique
   products  Product[]
   createdAt DateTime  @default(now())
@@ -76,12 +76,12 @@ model ProductCategory {
 }
 
 model File {
-  id          Int      @id @default(autoincrement())
-  userId      Int
+  id          String  @id @default(cuid())
+  userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId   Int      @unique
+  productId   String      @unique
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  categoryId  Int
+  categoryId  String
   displayName String
   key         String
   type        String
@@ -93,14 +93,14 @@ model File {
 }
 
 model Order {
-  id             Int      @id @default(autoincrement())
-  userId         Int
+  id             String  @id @default(cuid())
+  userId         String
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderLines     OrderLine[]
   orderSubTotal  Float
   shippingFee    Float
   shippingMethod String
-  paymentId      Int
+  paymentId      String
   payment        Payment?
   status         String
   createdAt      DateTime    @default(now())
@@ -108,9 +108,9 @@ model Order {
 }
 
 model OrderLine {
-  orderId      Int
+  orderId      String
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId    Int
+  productId    String
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -120,7 +120,7 @@ model OrderLine {
 }
 
 model Payment {
-  orderId       Int  @unique
+  orderId       String  @unique
   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   paymentIntent String
   amount        Float
