@@ -1,21 +1,18 @@
 import {
+  ArrayMinSize,
+  IsArray,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsPositive,
   IsString,
 } from 'class-validator';
 
 export class CreateProductDto {
-  productId: number;
+  productId: string;
 
-  @IsNumber()
-  @IsNotEmpty()
-  readonly categoryId: number;
+  userId: string;
 
-  @IsNumber()
-  @IsNotEmpty()
-  readonly userId: number;
+  categoryId: string;
 
   @IsString()
   @IsNotEmpty()
@@ -33,12 +30,14 @@ export class CreateProductDto {
   @IsNotEmpty()
   readonly printingSide: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
   readonly parcelColor: string[];
 
-  @IsString()
-  @IsNotEmpty()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
   readonly inkColor: string[];
 
   @IsNotEmpty()

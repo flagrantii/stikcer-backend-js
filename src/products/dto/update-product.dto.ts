@@ -1,17 +1,59 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateProductDto } from './create-product.dto';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNotEmpty,
+  IsBoolean,
+  IsNumber,
+  IsArray,
+  ArrayMinSize,
+} from 'class-validator';
 
-export class UpdateProductDto extends PartialType(CreateProductDto) {
+export class UpdateProductDto {
   @IsOptional()
   @IsString()
-  readonly fileUrl: string;
+  @IsNotEmpty()
+  readonly size: string;
 
   @IsOptional()
   @IsString()
-  readonly fileType: string;
+  @IsNotEmpty()
+  readonly material: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly shape: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly printingSide: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  readonly parcelColor: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  readonly inkColor: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  readonly isPurchased: boolean;
 
   @IsOptional()
   @IsNumber()
-  readonly fileSize: number;
+  readonly amount: number;
+
+  @IsOptional()
+  @IsNumber()
+  readonly unitPrice: number;
+
+  @IsOptional()
+  @IsString()
+  readonly note: string;
 }

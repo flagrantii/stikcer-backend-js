@@ -4,12 +4,13 @@ import {
   NotFoundException,
   ForbiddenException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { Product, User } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
 import * as uuid from 'uuid';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -23,7 +24,7 @@ export class ProductsService {
   ): Promise<Product> {
     this.logger.log(`Attempting to create a new product for user: ${user.id}`);
     try {
-      const productId = parseInt(uuid.v4().replace(/-/g, ''), 16);
+      const productId = uuid.v4();
 
       const product = await this.databaseService.$transaction(
         async (prisma) => {
@@ -69,7 +70,7 @@ export class ProductsService {
     }
   }
 
-  async findProductById(id: number, user: User): Promise<Product> {
+  async findProductById(id: string, user: User): Promise<Product> {
     this.logger.log(`Attempting to find product with id: ${id}`);
     try {
       const product = await this.databaseService.product.findUnique({
@@ -98,7 +99,7 @@ export class ProductsService {
   }
 
   async updateProductById(
-    id: number,
+    id: string,
     updateProductDto: UpdateProductDto,
     user: User,
   ): Promise<Product> {
@@ -118,9 +119,23 @@ export class ProductsService {
         );
       }
 
+      if (existingProduct.isPurchased) {
+        throw new BadRequestException(
+          'Product is already purchased, cannot update',
+        );
+      }
+
+      const subTotal = this.calculateSubTotal(
+        updateProductDto,
+        existingProduct,
+      );
+
       const updatedProduct = await this.databaseService.product.update({
         where: { id },
-        data: updateProductDto,
+        data: {
+          ...updateProductDto,
+          subTotal,
+        },
       });
 
       return updatedProduct;
@@ -133,7 +148,7 @@ export class ProductsService {
     }
   }
 
-  async deleteProductById(id: number, user: User): Promise<void> {
+  async deleteProductById(id: string, user: User): Promise<void> {
     this.logger.log(`Attempting to delete product with id: ${id}`);
     try {
       const existingProduct = await this.databaseService.product.findUnique({
@@ -161,7 +176,7 @@ export class ProductsService {
   }
 
   async findAllProductsByUserId(
-    userId: number,
+    userId: string,
     user: User,
   ): Promise<Product[]> {
     this.logger.log(
@@ -190,7 +205,7 @@ export class ProductsService {
   }
 
   async findAllProductsByCategoryId(
-    categoryId: number,
+    categoryId: string,
     user: User,
   ): Promise<Product[]> {
     this.logger.log(
@@ -213,5 +228,15 @@ export class ProductsService {
       );
       throw new InternalServerErrorException('Failed to fetch products');
     }
+  }
+
+  private calculateSubTotal(
+    updateProductDto: UpdateProductDto,
+    existingProduct: Product,
+  ): number {
+    const newUnitPrice =
+      updateProductDto.unitPrice ?? existingProduct.unitPrice;
+    const newAmount = updateProductDto.amount ?? existingProduct.amount;
+    return newUnitPrice * newAmount;
   }
 }
