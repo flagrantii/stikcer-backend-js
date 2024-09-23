@@ -3,7 +3,6 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
-  InternalServerErrorException,
   BadRequestException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';

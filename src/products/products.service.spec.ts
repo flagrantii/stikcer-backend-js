@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { DatabaseService } from '../database/database.service';
-import { NotFoundException, ForbiddenException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Product, User } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -86,7 +91,9 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to create product');
       });
 
-      await expect(service.createProduct(createProductDto, user)).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        service.createProduct(createProductDto, user),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
@@ -94,20 +101,20 @@ describe('ProductsService', () => {
     it('should return all products for admin', async () => {
       const user: User = { id: '1', role: 'ADMIN' } as User;
       const products: Product[] = [
-        { 
-          id: '1', 
-          userId: '1', 
-          categoryId: '1', 
-          size: 'M', 
-          material: 'Cotton', 
-          shape: 'Round', 
-          printingSide: 'Front', 
-          parcelColor: ['Red'], 
-          inkColor: ['Black'], 
-          unitPrice: 100, 
-          amount: 2, 
-          note: 'Test note', 
-          isPurchased: false, 
+        {
+          id: '1',
+          userId: '1',
+          categoryId: '1',
+          size: 'M',
+          material: 'Cotton',
+          shape: 'Round',
+          printingSide: 'Front',
+          parcelColor: ['Red'],
+          inkColor: ['Black'],
+          unitPrice: 100,
+          amount: 2,
+          note: 'Test note',
+          isPurchased: false,
           subTotal: 200,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -124,20 +131,20 @@ describe('ProductsService', () => {
     it('should return user-specific products for non-admin', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
       const products: Product[] = [
-        { 
-          id: '1', 
-          userId: '1', 
-          categoryId: '1', 
-          size: 'M', 
-          material: 'Cotton', 
-          shape: 'Round', 
-          printingSide: 'Front', 
-          parcelColor: ['Red'], 
-          inkColor: ['Black'], 
-          unitPrice: 100, 
-          amount: 2, 
-          note: 'Test note', 
-          isPurchased: false, 
+        {
+          id: '1',
+          userId: '1',
+          categoryId: '1',
+          size: 'M',
+          material: 'Cotton',
+          shape: 'Round',
+          printingSide: 'Front',
+          parcelColor: ['Red'],
+          inkColor: ['Black'],
+          unitPrice: 100,
+          amount: 2,
+          note: 'Test note',
+          isPurchased: false,
           subTotal: 200,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -148,7 +155,10 @@ describe('ProductsService', () => {
       const result = await service.findAllProducts(user);
 
       expect(result).toEqual(products);
-      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({ where: { userId: user.id }, include: { category: true } });
+      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({
+        where: { userId: user.id },
+        include: { category: true },
+      });
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
@@ -157,27 +167,29 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to fetch products');
       });
 
-      await expect(service.findAllProducts(user)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.findAllProducts(user)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
   describe('findProductById', () => {
     it('should return a product by ID', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
-      const product: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const product: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -187,39 +199,46 @@ describe('ProductsService', () => {
       const result = await service.findProductById('1', user);
 
       expect(result).toEqual(product);
-      expect(mockDatabaseService.product.findUnique).toHaveBeenCalledWith({ where: { id: '1' }, include: { category: true } });
+      expect(mockDatabaseService.product.findUnique).toHaveBeenCalledWith({
+        where: { id: '1' },
+        include: { category: true },
+      });
     });
 
     it('should throw NotFoundException if product not found', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
       mockDatabaseService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.findProductById('1', user)).rejects.toThrow(NotFoundException);
+      await expect(service.findProductById('1', user)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException if user is not authorized', async () => {
       const user: User = { id: '2', role: 'USER' } as User;
-      const product: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const product: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       mockDatabaseService.product.findUnique.mockResolvedValue(product);
 
-      await expect(service.findProductById('1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.findProductById('1', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
@@ -228,7 +247,9 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to fetch product');
       });
 
-      await expect(service.findProductById('1', user)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.findProductById('1', user)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -247,29 +268,29 @@ describe('ProductsService', () => {
         note: 'Updated note',
       };
       const user: User = { id: '1', role: 'USER' } as User;
-      const existingProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const existingProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const updatedProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        ...updateProductDto, 
+      const updatedProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        ...updateProductDto,
         subTotal: 450,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -277,10 +298,17 @@ describe('ProductsService', () => {
       mockDatabaseService.product.findUnique.mockResolvedValue(existingProduct);
       mockDatabaseService.product.update.mockResolvedValue(updatedProduct);
 
-      const result = await service.updateProductById('1', updateProductDto, user);
+      const result = await service.updateProductById(
+        '1',
+        updateProductDto,
+        user,
+      );
 
       expect(result).toEqual(updatedProduct);
-      expect(mockDatabaseService.product.update).toHaveBeenCalledWith({ where: { id: '1' }, data: { ...updateProductDto, subTotal: 450 } });
+      expect(mockDatabaseService.product.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: { ...updateProductDto, subTotal: 450 },
+      });
     });
 
     it('should throw NotFoundException if product not found', async () => {
@@ -299,7 +327,9 @@ describe('ProductsService', () => {
       const user: User = { id: '1', role: 'USER' } as User;
       mockDatabaseService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.updateProductById('1', updateProductDto, user)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateProductById('1', updateProductDto, user),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if user is not authorized', async () => {
@@ -316,27 +346,29 @@ describe('ProductsService', () => {
         note: 'Updated note',
       };
       const user: User = { id: '2', role: 'USER' } as User;
-      const existingProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const existingProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       mockDatabaseService.product.findUnique.mockResolvedValue(existingProduct);
 
-      await expect(service.updateProductById('1', updateProductDto, user)).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.updateProductById('1', updateProductDto, user),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException if product is already purchased', async () => {
@@ -353,27 +385,29 @@ describe('ProductsService', () => {
         note: 'Updated note',
       };
       const user: User = { id: '1', role: 'USER' } as User;
-      const existingProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: true, 
+      const existingProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: true,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       mockDatabaseService.product.findUnique.mockResolvedValue(existingProduct);
 
-      await expect(service.updateProductById('1', updateProductDto, user)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.updateProductById('1', updateProductDto, user),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw InternalServerErrorException if updating fails', async () => {
@@ -390,20 +424,20 @@ describe('ProductsService', () => {
         note: 'Updated note',
       };
       const user: User = { id: '1', role: 'USER' } as User;
-      const existingProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const existingProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -413,27 +447,29 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to update product');
       });
 
-      await expect(service.updateProductById('1', updateProductDto, user)).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        service.updateProductById('1', updateProductDto, user),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
   describe('deleteProductById', () => {
     it('should delete a product', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
-      const existingProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const existingProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -443,57 +479,63 @@ describe('ProductsService', () => {
 
       await service.deleteProductById('1', user);
 
-      expect(mockDatabaseService.product.delete).toHaveBeenCalledWith({ where: { id: '1' } });
+      expect(mockDatabaseService.product.delete).toHaveBeenCalledWith({
+        where: { id: '1' },
+      });
     });
 
     it('should throw NotFoundException if product not found', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
       mockDatabaseService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteProductById('1', user)).rejects.toThrow(NotFoundException);
+      await expect(service.deleteProductById('1', user)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException if user is not authorized', async () => {
       const user: User = { id: '2', role: 'USER' } as User;
-      const existingProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const existingProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       mockDatabaseService.product.findUnique.mockResolvedValue(existingProduct);
 
-      await expect(service.deleteProductById('1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteProductById('1', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw InternalServerErrorException if deleting fails', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
-      const existingProduct: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const existingProduct: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -503,7 +545,9 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to delete product');
       });
 
-      await expect(service.deleteProductById('1', user)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.deleteProductById('1', user)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -511,20 +555,20 @@ describe('ProductsService', () => {
     it('should return all products for a user', async () => {
       const user: User = { id: '1', role: 'ADMIN' } as User;
       const products: Product[] = [
-        { 
-          id: '1', 
-          userId: '1', 
-          categoryId: '1', 
-          size: 'M', 
-          material: 'Cotton', 
-          shape: 'Round', 
-          printingSide: 'Front', 
-          parcelColor: ['Red'], 
-          inkColor: ['Black'], 
-          unitPrice: 100, 
-          amount: 2, 
-          note: 'Test note', 
-          isPurchased: false, 
+        {
+          id: '1',
+          userId: '1',
+          categoryId: '1',
+          size: 'M',
+          material: 'Cotton',
+          shape: 'Round',
+          printingSide: 'Front',
+          parcelColor: ['Red'],
+          inkColor: ['Black'],
+          unitPrice: 100,
+          amount: 2,
+          note: 'Test note',
+          isPurchased: false,
           subTotal: 200,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -535,13 +579,18 @@ describe('ProductsService', () => {
       const result = await service.findAllProductsByUserId('1', user);
 
       expect(result).toEqual(products);
-      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({ where: { userId: '1' }, include: { category: true } });
+      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({
+        where: { userId: '1' },
+        include: { category: true },
+      });
     });
 
     it('should throw ForbiddenException if user is not authorized', async () => {
       const user: User = { id: '2', role: 'USER' } as User;
 
-      await expect(service.findAllProductsByUserId('1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.findAllProductsByUserId('1', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
@@ -550,7 +599,9 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to fetch products');
       });
 
-      await expect(service.findAllProductsByUserId('1', user)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.findAllProductsByUserId('1', user)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -558,19 +609,20 @@ describe('ProductsService', () => {
     it('should return all products for a category', async () => {
       const user: User = { id: '1', role: 'ADMIN' } as User;
       const products: Product[] = [
-        { id: '1', 
-          userId: '1', 
-          categoryId: '1', 
-          size: 'M', 
-          material: 'Cotton', 
-          shape: 'Round', 
-          printingSide: 'Front', 
-          parcelColor: ['Red'], 
-          inkColor: ['Black'], 
-          unitPrice: 100, 
-          amount: 2, 
-          note: 'Test note', 
-          isPurchased: false, 
+        {
+          id: '1',
+          userId: '1',
+          categoryId: '1',
+          size: 'M',
+          material: 'Cotton',
+          shape: 'Round',
+          printingSide: 'Front',
+          parcelColor: ['Red'],
+          inkColor: ['Black'],
+          unitPrice: 100,
+          amount: 2,
+          note: 'Test note',
+          isPurchased: false,
           subTotal: 200,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -581,7 +633,10 @@ describe('ProductsService', () => {
       const result = await service.findAllProductsByCategoryId('1', user);
 
       expect(result).toEqual(products);
-      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({ where: { categoryId: '1' }, include: { category: true } });
+      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({
+        where: { categoryId: '1' },
+        include: { category: true },
+      });
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
@@ -590,27 +645,29 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to fetch products');
       });
 
-      await expect(service.findAllProductsByCategoryId('1', user)).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        service.findAllProductsByCategoryId('1', user),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
   describe('findProductById', () => {
     it('should return a product by ID', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
-      const product: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const product: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -620,39 +677,46 @@ describe('ProductsService', () => {
       const result = await service.findProductById('1', user);
 
       expect(result).toEqual(product);
-      expect(mockDatabaseService.product.findUnique).toHaveBeenCalledWith({ where: { id: '1' }, include: { category: true } });
+      expect(mockDatabaseService.product.findUnique).toHaveBeenCalledWith({
+        where: { id: '1' },
+        include: { category: true },
+      });
     });
 
     it('should throw NotFoundException if product not found', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
       mockDatabaseService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.findProductById('1', user)).rejects.toThrow(NotFoundException);
+      await expect(service.findProductById('1', user)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException if user is not authorized to access the product', async () => {
       const user: User = { id: '2', role: 'USER' } as User;
-      const product: Product = { 
-        id: '1', 
-        userId: '1', 
-        categoryId: '1', 
-        size: 'M', 
-        material: 'Cotton', 
-        shape: 'Round', 
-        printingSide: 'Front', 
-        parcelColor: ['Red'], 
-        inkColor: ['Black'], 
-        unitPrice: 100, 
-        amount: 2, 
-        note: 'Test note', 
-        isPurchased: false, 
+      const product: Product = {
+        id: '1',
+        userId: '1',
+        categoryId: '1',
+        size: 'M',
+        material: 'Cotton',
+        shape: 'Round',
+        printingSide: 'Front',
+        parcelColor: ['Red'],
+        inkColor: ['Black'],
+        unitPrice: 100,
+        amount: 2,
+        note: 'Test note',
+        isPurchased: false,
         subTotal: 200,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       mockDatabaseService.product.findUnique.mockResolvedValue(product);
 
-      await expect(service.findProductById('1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.findProductById('1', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
@@ -661,8 +725,9 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to fetch product');
       });
 
-      await expect(service.findProductById('1', user)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.findProductById('1', user)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 });
-

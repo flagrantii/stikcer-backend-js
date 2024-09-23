@@ -7,7 +7,6 @@ import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
 describe('ProductsController', () => {
   let controller: ProductsController;
-  let service: ProductsService;
 
   const mockProductsService = {
     findAllProducts: jest.fn(),
@@ -31,7 +30,6 @@ describe('ProductsController', () => {
     }).compile();
 
     controller = module.get<ProductsController>(ProductsController);
-    service = module.get<ProductsService>(ProductsService);
   });
 
   it('should be defined', () => {
@@ -57,8 +55,13 @@ describe('ProductsController', () => {
     const req = { user: { id: '1' } };
     mockProductsService.createProduct.mockResolvedValue(createProductDto);
 
-    expect(await controller.createProduct(createProductDto, req)).toBe(createProductDto);
-    expect(mockProductsService.createProduct).toHaveBeenCalledWith(createProductDto, req.user);
+    expect(await controller.createProduct(createProductDto, req)).toBe(
+      createProductDto,
+    );
+    expect(mockProductsService.createProduct).toHaveBeenCalledWith(
+      createProductDto,
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to create a product', async () => {
@@ -82,7 +85,9 @@ describe('ProductsController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.createProduct(createProductDto, req)).rejects.toThrow(ForbiddenException);
+    await expect(
+      controller.createProduct(createProductDto, req),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('should return 400 if createProductDto is not valid', async () => {
@@ -105,7 +110,9 @@ describe('ProductsController', () => {
       throw new BadRequestException();
     });
 
-    await expect(controller.createProduct(createProductDto, req)).rejects.toThrow(BadRequestException);
+    await expect(
+      controller.createProduct(createProductDto, req),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('should get all products', async () => {
@@ -123,7 +130,10 @@ describe('ProductsController', () => {
     mockProductsService.findProductById.mockResolvedValue(result);
 
     expect(await controller.getProductById('1', req)).toBe(result);
-    expect(mockProductsService.findProductById).toHaveBeenCalledWith('1', req.user);
+    expect(mockProductsService.findProductById).toHaveBeenCalledWith(
+      '1',
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to get a product by ID', async () => {
@@ -132,7 +142,9 @@ describe('ProductsController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.getProductById('1', req)).rejects.toThrow(ForbiddenException);
+    await expect(controller.getProductById('1', req)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('should update a product', async () => {
@@ -152,8 +164,14 @@ describe('ProductsController', () => {
     const result = { id: '1', ...updateProductDto };
     mockProductsService.updateProductById.mockResolvedValue(result);
 
-    expect(await controller.updateProduct('1', updateProductDto, req)).toBe(result);
-    expect(mockProductsService.updateProductById).toHaveBeenCalledWith('1', updateProductDto, req.user);
+    expect(await controller.updateProduct('1', updateProductDto, req)).toBe(
+      result,
+    );
+    expect(mockProductsService.updateProductById).toHaveBeenCalledWith(
+      '1',
+      updateProductDto,
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to update a product', async () => {
@@ -174,7 +192,9 @@ describe('ProductsController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.updateProduct('1', updateProductDto, req)).rejects.toThrow(ForbiddenException);
+    await expect(
+      controller.updateProduct('1', updateProductDto, req),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('should delete a product', async () => {
@@ -182,7 +202,10 @@ describe('ProductsController', () => {
     mockProductsService.deleteProductById.mockResolvedValue(undefined);
 
     expect(await controller.deleteProduct('1', req)).toBeUndefined();
-    expect(mockProductsService.deleteProductById).toHaveBeenCalledWith('1', req.user);
+    expect(mockProductsService.deleteProductById).toHaveBeenCalledWith(
+      '1',
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to delete a product', async () => {
@@ -191,7 +214,9 @@ describe('ProductsController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.deleteProduct('1', req)).rejects.toThrow(ForbiddenException);
+    await expect(controller.deleteProduct('1', req)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('should get products by category ID', async () => {
@@ -200,7 +225,9 @@ describe('ProductsController', () => {
     mockProductsService.findAllProductsByCategoryId.mockResolvedValue(result);
 
     expect(await controller.getProductsByCategoryId('1', req)).toBe(result);
-    expect(mockProductsService.findAllProductsByCategoryId).toHaveBeenCalledWith('1', req.user);
+    expect(
+      mockProductsService.findAllProductsByCategoryId,
+    ).toHaveBeenCalledWith('1', req.user);
   });
 
   it('should get products by user ID', async () => {
@@ -209,7 +236,10 @@ describe('ProductsController', () => {
     mockProductsService.findAllProductsByUserId.mockResolvedValue(result);
 
     expect(await controller.getProductsByUserId('1', req)).toBe(result);
-    expect(mockProductsService.findAllProductsByUserId).toHaveBeenCalledWith('1', req.user);
+    expect(mockProductsService.findAllProductsByUserId).toHaveBeenCalledWith(
+      '1',
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to get products by user ID', async () => {
@@ -218,6 +248,8 @@ describe('ProductsController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.getProductsByUserId('1', req)).rejects.toThrow(ForbiddenException);
+    await expect(controller.getProductsByUserId('1', req)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });

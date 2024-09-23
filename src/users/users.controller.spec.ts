@@ -303,7 +303,9 @@ describe('UsersController', () => {
 
       mockUsersService.findUserProfile.mockResolvedValue(mockUser);
 
-      const result = await controller.getUserById(mockUser.id, { user: mockUser });
+      const result = await controller.getUserById(mockUser.id, {
+        user: mockUser,
+      });
 
       expect(result).toEqual(mockUser);
       expect(mockUsersService.findUserProfile).toHaveBeenCalledWith(
@@ -338,8 +340,8 @@ describe('UsersController', () => {
         mockUser,
       );
     });
-  }); 
-  
+  });
+
   describe('getUserAddressByUserId', () => {
     it('should return a user address by user ID', async () => {
       const mockUser: User = {
@@ -373,7 +375,9 @@ describe('UsersController', () => {
 
       mockUsersService.findAddressByUserId.mockResolvedValue(mockAddress);
 
-      const result = await controller.getUserAddress(mockUser.id, { user: mockUser });
+      const result = await controller.getUserAddress(mockUser.id, {
+        user: mockUser,
+      });
 
       expect(result).toEqual(mockAddress);
       expect(mockUsersService.findAddressByUserId).toHaveBeenCalledWith(
@@ -517,7 +521,11 @@ describe('UsersController', () => {
 
       mockUsersService.updateAddressByUserId.mockResolvedValue(mockAddress);
 
-      const result = await controller.updateUserAddress(mockUser.id, updateAddressDto, { user: mockUser });
+      const result = await controller.updateUserAddress(
+        mockUser.id,
+        updateAddressDto,
+        { user: mockUser },
+      );
 
       expect(result).toEqual(mockAddress);
       expect(mockUsersService.updateAddressByUserId).toHaveBeenCalledWith(
@@ -580,7 +588,7 @@ describe('UsersController', () => {
         password: 'hashedpassword',
         phone: '1234567890',
         createdAt: new Date(),
-        updatedAt: new Date(), 
+        updatedAt: new Date(),
       };
 
       mockUsersService.deleteAddressByUserId.mockResolvedValue(undefined);

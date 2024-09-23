@@ -7,7 +7,6 @@ import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
 describe('CategoriesController', () => {
   let controller: CategoriesController;
-  let service: CategoriesService;
 
   const mockCategoriesService = {
     findAllCategories: jest.fn(),
@@ -42,8 +41,13 @@ describe('CategoriesController', () => {
     const req = { user: { id: '1' } };
     mockCategoriesService.createCategory.mockResolvedValue(createCategoryDto);
 
-    expect(await controller.createCategory(createCategoryDto, req)).toBe(createCategoryDto);
-    expect(mockCategoriesService.createCategory).toHaveBeenCalledWith(createCategoryDto, req.user);
+    expect(await controller.createCategory(createCategoryDto, req)).toBe(
+      createCategoryDto,
+    );
+    expect(mockCategoriesService.createCategory).toHaveBeenCalledWith(
+      createCategoryDto,
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to create a category', async () => {
@@ -55,7 +59,9 @@ describe('CategoriesController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.createCategory(createCategoryDto, req)).rejects.toThrow(ForbiddenException);
+    await expect(
+      controller.createCategory(createCategoryDto, req),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('should return 400 if createCategoryDto is not valid', async () => {
@@ -67,7 +73,9 @@ describe('CategoriesController', () => {
       throw new BadRequestException();
     });
 
-    await expect(controller.createCategory(createCategoryDto, req)).rejects.toThrow(BadRequestException);
+    await expect(
+      controller.createCategory(createCategoryDto, req),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('should get all categories', async () => {
@@ -95,8 +103,14 @@ describe('CategoriesController', () => {
     const result = { id: '1', ...updateCategoryDto };
     mockCategoriesService.updateCategoryById.mockResolvedValue(result);
 
-    expect(await controller.updateCategory('1', updateCategoryDto, req)).toBe(result);
-    expect(mockCategoriesService.updateCategoryById).toHaveBeenCalledWith('1', updateCategoryDto, req.user);
+    expect(await controller.updateCategory('1', updateCategoryDto, req)).toBe(
+      result,
+    );
+    expect(mockCategoriesService.updateCategoryById).toHaveBeenCalledWith(
+      '1',
+      updateCategoryDto,
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to update a category', async () => {
@@ -108,7 +122,9 @@ describe('CategoriesController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.updateCategory('1', updateCategoryDto, req)).rejects.toThrow(ForbiddenException);
+    await expect(
+      controller.updateCategory('1', updateCategoryDto, req),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('should delete a category', async () => {
@@ -116,7 +132,10 @@ describe('CategoriesController', () => {
     mockCategoriesService.deleteCategoryById.mockResolvedValue(undefined);
 
     expect(await controller.deleteCategory('1', req)).toBeUndefined();
-    expect(mockCategoriesService.deleteCategoryById).toHaveBeenCalledWith('1', req.user);
+    expect(mockCategoriesService.deleteCategoryById).toHaveBeenCalledWith(
+      '1',
+      req.user,
+    );
   });
 
   it('should return 403 if user is not authorized to delete a category', async () => {
@@ -125,6 +144,8 @@ describe('CategoriesController', () => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.deleteCategory('1', req)).rejects.toThrow(ForbiddenException);
+    await expect(controller.deleteCategory('1', req)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });

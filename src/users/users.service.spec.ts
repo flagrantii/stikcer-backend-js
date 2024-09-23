@@ -6,7 +6,6 @@ import { User, Address } from '@prisma/client';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
-import * as bcrypt from 'bcryptjs';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -167,7 +166,11 @@ describe('UsersService', () => {
       mockDatabaseService.user.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.updateUserById('1', {} as UpdateUserDto, { id: '1', role: 'USER' } as User),
+        service.updateUserById(
+          '1',
+          {} as UpdateUserDto,
+          { id: '1', role: 'USER' } as User,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -258,7 +261,7 @@ describe('UsersService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-    
+
       const anotherUser: User = {
         id: '2',
         role: 'USER',
@@ -270,12 +273,12 @@ describe('UsersService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-    
+
       mockDatabaseService.user.findUnique.mockResolvedValue(anotherUser);
-    
-      await expect(
-        service.deleteUserById('2', mockUser),
-      ).rejects.toThrow(ForbiddenException);
+
+      await expect(service.deleteUserById('2', mockUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -523,11 +526,10 @@ describe('UsersService', () => {
       mockDatabaseService.address.findUnique.mockResolvedValue(mockUser);
 
       await expect(
-        service.updateAddressByUserId(
-          '2',
-          updateAddressDto,
-          { id: '1', role: 'USER' } as User,
-        ),
+        service.updateAddressByUserId('2', updateAddressDto, {
+          id: '1',
+          role: 'USER',
+        } as User),
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -585,18 +587,6 @@ describe('UsersService', () => {
     });
 
     it('should throw ForbiddenException if non-admin user tries to delete another user address', async () => {
-      const mockUser: User = {
-        id: '1',
-        role: 'USER',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: `johnDoe@example.com`,
-        password: 'hashedpassword',
-        phone: '1234567890',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
       const mockAddress: Address = {
         id: '1',
         userId: '1',
@@ -622,4 +612,3 @@ describe('UsersService', () => {
     });
   });
 });
-  
