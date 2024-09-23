@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsPositive, IsString } from 'class-validator';
+import { IsNotEmpty, IsPositive, IsString, IsNumber } from 'class-validator';
 import { CreateOrderLineDto } from './create-orderLine.dto';
 
 export class CreateOrderDto {
@@ -19,6 +19,10 @@ export class CreateOrderDto {
   @IsNotEmpty()
   @IsString()
   paymentId: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  orderSubTotal: number;
 
   @IsNotEmpty()
   status: string = 'pending';
