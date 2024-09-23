@@ -48,7 +48,7 @@ export class ProductsService {
         `Failed to create product: ${error.message}`,
         error.stack,
       );
-      throw new InternalServerErrorException('Failed to create product');
+      throw error;
     }
   }
 
@@ -66,7 +66,7 @@ export class ProductsService {
         `Failed to fetch products: ${error.message}`,
         error.stack,
       );
-      throw new InternalServerErrorException('Failed to fetch products');
+      throw error;
     }
   }
 
@@ -226,7 +226,7 @@ export class ProductsService {
         `Failed to fetch products: ${error.message}`,
         error.stack,
       );
-      throw new InternalServerErrorException('Failed to fetch products');
+      throw error;
     }
   }
 
