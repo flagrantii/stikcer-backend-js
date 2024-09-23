@@ -14,8 +14,11 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.healthcheck()).toBe('Hello World!');
+    it('should return the server and version', () => {
+      expect(appController.healthcheck()).toStrictEqual({
+        server: 'ecommerce-api-nestjs',
+        version: '1.0.0',
+      });
     });
   });
 });
