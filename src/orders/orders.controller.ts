@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -46,8 +47,14 @@ export class OrdersController {
   @Get()
   @ApiOperation({ summary: 'Get all orders' })
   @ApiResponse({ status: 200, description: 'Returns all orders.' })
-  async getAllOrders(@Request() req) {
-    return this.ordersService.findAllOrders(req.user);
+  @ApiParam({ name: 'page', type: 'number' })
+  @ApiParam({ name: 'limit', type: 'number' })
+  async getAllOrders(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Request() req,
+  ) {
+    return this.ordersService.findAllOrders(req.user, page, limit);
   }
 
   @Get('user/:userId')
@@ -56,9 +63,16 @@ export class OrdersController {
     status: 200,
     description: 'Returns orders for the specified user.',
   })
+  @ApiParam({ name: 'page', type: 'number' })
+  @ApiParam({ name: 'limit', type: 'number' })
   @ApiParam({ name: 'userId', type: 'string' })
-  async getOrdersByUserId(@Param('userId') userId: string, @Request() req) {
-    return this.ordersService.findOrdersByUserId(userId, req.user);
+  async getOrdersByUserId(
+    @Param('userId') userId: string,
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Request() req,
+  ) {
+    return this.ordersService.findOrdersByUserId(userId, req.user, page, limit);
   }
 
   @Get(':id')

@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ForbiddenException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -20,6 +21,8 @@ describe('OrdersService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      findFirst: jest.fn(),
+      count: jest.fn(),
     },
     product: {
       findUnique: jest.fn(),
@@ -99,7 +102,7 @@ describe('OrdersService', () => {
   });
 
   describe('findAllOrders', () => {
-    it('should return all orders for admin', async () => {
+    it('should return paginated orders for admin', async () => {
       const user: User = { id: '1', role: 'ADMIN' } as User;
       const orders: Order[] = [
         {
@@ -115,25 +118,30 @@ describe('OrdersService', () => {
         },
       ];
 
-      mockDatabaseService.order.findMany.mockResolvedValue(orders);
+      mockDatabaseService.$transaction.mockResolvedValue([orders, 1]);
 
-      const result = await service.findAllOrders(user);
+      const result = await service.findAllOrders(user, 1, 10);
 
-      expect(result).toEqual(orders);
-      expect(mockDatabaseService.order.findMany).toHaveBeenCalled();
+      expect(result).toEqual({ orders, total: 1, page: 1, total_pages: 1 });
+      expect(mockDatabaseService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
     });
 
-    it('should throw ForbiddenException if non-admin user tries to access all orders', async () => {
-      const user: User = { id: '1', role: 'USER' } as User;
+    it('should throw BadRequestException for invalid page or limit', async () => {
+      const user: User = { id: '1', role: 'ADMIN' } as User;
 
-      await expect(service.findAllOrders(user)).rejects.toThrow(
-        ForbiddenException,
+      await expect(service.findAllOrders(user, 0, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.findAllOrders(user, 1, 0)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
 
   describe('findOrdersByUserId', () => {
-    it('should return orders for a specific user', async () => {
+    it('should return paginated orders for a specific user', async () => {
       const user: User = { id: '1', role: 'ADMIN' } as User;
       const orders: Order[] = [
         {
@@ -149,22 +157,32 @@ describe('OrdersService', () => {
         },
       ];
 
-      mockDatabaseService.order.findMany.mockResolvedValue(orders);
+      mockDatabaseService.$transaction.mockResolvedValue([orders, 1]);
 
-      const result = await service.findOrdersByUserId('1', user);
+      const result = await service.findOrdersByUserId('1', user, 1, 10);
 
-      expect(result).toEqual(orders);
-      expect(mockDatabaseService.order.findMany).toHaveBeenCalledWith({
-        where: { userId: '1' },
-        include: { orderLines: true },
-      });
+      expect(result).toEqual({ orders, total: 1, page: 1, total_pages: 1 });
+      expect(mockDatabaseService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
     });
 
     it('should throw ForbiddenException if user is not authorized', async () => {
       const user: User = { id: '2', role: 'USER' } as User;
 
-      await expect(service.findOrdersByUserId('1', user)).rejects.toThrow(
-        ForbiddenException,
+      await expect(
+        service.findOrdersByUserId('1', user, 1, 10),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException for invalid page or limit', async () => {
+      const user: User = { id: '1', role: 'ADMIN' } as User;
+
+      await expect(
+        service.findOrdersByUserId('1', user, 0, 10),
+      ).rejects.toThrow(BadRequestException);
+      await expect(service.findOrdersByUserId('1', user, 1, 0)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { Order, OrderStatus, User } from '@prisma/client';
@@ -69,14 +70,37 @@ export class OrdersService {
     }
   }
 
-  async findAllOrders(user: User): Promise<Order[]> {
+  async findAllOrders(
+    user: User,
+    page: number,
+    limit: number,
+  ): Promise<{
+    orders: Order[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> {
     this.logger.log(`Attempting to find all orders for user: ${user.id}`);
     try {
-      const orders = await this.databaseService.order.findMany({
-        where: user.role === 'USER' ? { userId: user.id } : {},
-        include: { orderLines: true },
-      });
-      return orders;
+      if (page < 1 || limit < 1) {
+        throw new BadRequestException('Invalid page or limit value');
+      }
+
+      const [orders, total] = await this.databaseService.$transaction([
+        this.databaseService.order.findMany({
+          where: user.role === 'USER' ? { userId: user.id } : {},
+          skip: (page - 1) * limit,
+          take: limit,
+          include: { orderLines: true },
+        }),
+        this.databaseService.order.count({
+          where: user.role === 'USER' ? { userId: user.id } : {},
+        }),
+      ]);
+
+      const total_pages = Math.ceil(total / limit);
+
+      return { total, page, total_pages, orders };
     } catch (error) {
       this.logger.error(
         `Failed to fetch orders: ${error.message}`,
@@ -86,19 +110,40 @@ export class OrdersService {
     }
   }
 
-  async findOrdersByUserId(userId: string, user: User): Promise<Order[]> {
+  async findOrdersByUserId(
+    userId: string,
+    user: User,
+    page: number,
+    limit: number,
+  ): Promise<{
+    orders: Order[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> {
     this.logger.log(`Attempting to find orders for user with id: ${userId}`);
     try {
+      if (page < 1 || limit < 1) {
+        throw new BadRequestException('Invalid page or limit value');
+      }
       if (user.role !== 'ADMIN' && user.id !== userId) {
         throw new ForbiddenException(
           'You are not authorized to access these orders',
         );
       }
-      const orders = await this.databaseService.order.findMany({
-        where: { userId },
-        include: { orderLines: true },
-      });
-      return orders;
+      const [orders, total] = await this.databaseService.$transaction([
+        this.databaseService.order.findMany({
+          where: { userId },
+          skip: (page - 1) * limit,
+          take: limit,
+          include: { orderLines: true },
+        }),
+        this.databaseService.order.count({
+          where: { userId },
+        }),
+      ]);
+      const total_pages = Math.ceil(total / limit);
+      return { total, page, total_pages, orders };
     } catch (error) {
       this.logger.error(
         `Failed to fetch orders: ${error.message}`,
