@@ -53,7 +53,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         id: '1',
         userId: '1',
       };
@@ -81,7 +81,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         orderSubTotal: 200,
         id: '1',
         userId: '1',
@@ -109,7 +109,7 @@ describe('OrdersService', () => {
           shippingFee: 10,
           shippingMethod: 'Standard',
           paymentId: 'payment123',
-          status: 'Pending',
+          status: 'AWAITING_PAYMENT',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -143,7 +143,7 @@ describe('OrdersService', () => {
           shippingFee: 10,
           shippingMethod: 'Standard',
           paymentId: 'payment123',
-          status: 'Pending',
+          status: 'AWAITING_PAYMENT',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -179,7 +179,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -213,7 +213,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -239,7 +239,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -250,7 +250,7 @@ describe('OrdersService', () => {
         shippingFee: 15,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Shipped',
+        status: 'SHIPPED',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -269,7 +269,7 @@ describe('OrdersService', () => {
 
     it('should throw NotFoundException if order not found', async () => {
       const updateOrderDto: UpdateOrderDto = {
-        status: 'Shipped',
+        status: 'SHIPPED',
       };
       const user: User = { id: '1', role: 'ADMIN' } as User;
 
@@ -292,7 +292,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -315,7 +315,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -348,7 +348,7 @@ describe('OrdersService', () => {
         shippingFee: 10,
         shippingMethod: 'Standard',
         paymentId: 'payment123',
-        status: 'Pending',
+        status: 'AWAITING_PAYMENT',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

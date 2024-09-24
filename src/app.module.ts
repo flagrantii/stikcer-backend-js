@@ -18,11 +18,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { CategoriesModule } from './categories/categories.module';
 import { FilesService } from './files/files.service';
-import { FilesController } from './files/files.controller';
 import { FilesModule } from './files/files.module';
 import { AuthMiddleware } from './middleware/authenticated';
 import { S3Module } from './s3/s3.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PaymentService } from './payment/payment.service';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -36,9 +37,10 @@ import { ScheduleModule } from '@nestjs/schedule';
     CategoriesModule,
     FilesModule,
     S3Module,
+    PaymentModule,
     ScheduleModule.forRoot(),
   ],
-  controllers: [AppController, FilesController],
+  controllers: [AppController],
   providers: [
     AppService,
     AuthMiddleware,
@@ -47,6 +49,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       useClass: ValidationPipe,
     },
     FilesService,
+    PaymentService,
   ],
 })
 export class AppModule implements NestModule {
