@@ -16,33 +16,43 @@ export class PaymentService {
     const refNo = Math.random().toString(36).substring(2, 15);
     try {
       const merchantId = this.configService.get<string>('PAYMENT_MERCHANT_ID');
-      const merchantSecretKey = this.configService.get<string>('PAYMENT_MERCHANT_SECRET_KEY');
+      const merchantSecretKey = this.configService.get<string>(
+        'PAYMENT_MERCHANT_SECRET_KEY',
+      );
       const apiKey = this.configService.get<string>('PAYMENT_API_KEY');
       if (!merchantId || !merchantSecretKey || !apiKey) {
-        throw new InternalServerErrorException('Payment configuration is missing');
+        throw new InternalServerErrorException(
+          'Payment configuration is missing',
+        );
       }
 
-      const response = await axios.post('https://payment.paysolutions.asia/epaylink/payment.aspx', {
-        orderNo: createPaymentDto.orderId,
-        refNo: refNo,
-        productDetail: createPaymentDto.productDetail,
-        customeremail: createPaymentDto.customerEmail,
-        cc: createPaymentDto.currencyCode,
-        total: createPaymentDto.total,
-        lang: createPaymentDto.lang,
-        channel: createPaymentDto.channel,
-      }, {
-        headers: {
-          'merchantId': merchantId,
-          'merchantSecretKey': merchantSecretKey,
-          'Content-Type': 'application/json',
-          'apikey': apiKey,
-        }
-      });
+      const response = await axios.post(
+        'https://payment.paysolutions.asia/epaylink/payment.aspx',
+        {
+          orderNo: createPaymentDto.orderId,
+          refNo: refNo,
+          productDetail: createPaymentDto.productDetail,
+          customeremail: createPaymentDto.customerEmail,
+          cc: createPaymentDto.currencyCode,
+          total: createPaymentDto.total,
+          lang: createPaymentDto.lang,
+          channel: createPaymentDto.channel,
+        },
+        {
+          headers: {
+            merchantId: merchantId,
+            merchantSecretKey: merchantSecretKey,
+            'Content-Type': 'application/json',
+            apikey: apiKey,
+          },
+        },
+      );
 
       const paymentData = response.data[0];
       if (!paymentData) {
-        throw new InternalServerErrorException('Invalid response from payment gateway');
+        throw new InternalServerErrorException(
+          'Invalid response from payment gateway',
+        );
       }
 
       const paymentId = uuid.v4();
