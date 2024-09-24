@@ -51,15 +51,37 @@ export class ProductsService {
     }
   }
 
-  async findAllProducts(user: User): Promise<Product[]> {
+  async findAllProducts(
+    user: User,
+    page: number,
+    limit: number,
+  ): Promise<{
+    products: Product[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> {
     this.logger.log(`Attempting to find all products for user: ${user.id}`);
     try {
-      const products = await this.databaseService.product.findMany({
-        where: user.role === 'USER' ? { userId: user.id } : {},
-        include: { category: true },
-      });
+      if (page < 1 || limit < 1) {
+        throw new BadRequestException('Invalid page or limit value');
+      }
 
-      return products;
+      const [products, total] = await this.databaseService.$transaction([
+        this.databaseService.product.findMany({
+          where: user.role === 'USER' ? { userId: user.id } : {},
+          skip: (page - 1) * limit,
+          take: limit,
+          include: { category: true },
+        }),
+        this.databaseService.product.count({
+          where: user.role === 'USER' ? { userId: user.id } : {},
+        }),
+      ]);
+
+      const total_pages = Math.ceil(total / limit);
+
+      return { total, page, total_pages, products };
     } catch (error) {
       this.logger.error(
         `Failed to fetch products: ${error.message}`,
@@ -177,23 +199,43 @@ export class ProductsService {
   async findAllProductsByUserId(
     userId: string,
     user: User,
-  ): Promise<Product[]> {
+    page: number,
+    limit: number,
+  ): Promise<{
+    products: Product[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> {
     this.logger.log(
       `Attempting to find all products for user with id: ${userId}`,
     );
     try {
+      if (page < 1 || limit < 1) {
+        throw new BadRequestException('Invalid page or limit value');
+      }
+
       if (user.role !== 'ADMIN' && user.id !== userId) {
         throw new ForbiddenException(
-          'You are not authorized to access these products',
+          "You are not authorized to access this user's products",
         );
       }
 
-      const products = await this.databaseService.product.findMany({
-        where: { userId },
-        include: { category: true },
-      });
+      const [products, total] = await this.databaseService.$transaction([
+        this.databaseService.product.findMany({
+          where: { userId: userId },
+          skip: (page - 1) * limit,
+          take: limit,
+          include: { category: true },
+        }),
+        this.databaseService.product.count({
+          where: { userId: userId },
+        }),
+      ]);
 
-      return products;
+      const total_pages = Math.ceil(total / limit);
+
+      return { products, total, page, total_pages };
     } catch (error) {
       this.logger.error(
         `Failed to fetch products: ${error.message}`,
@@ -206,20 +248,48 @@ export class ProductsService {
   async findAllProductsByCategoryId(
     categoryId: string,
     user: User,
-  ): Promise<Product[]> {
+    page: number,
+    limit: number,
+  ): Promise<{
+    products: Product[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> {
     this.logger.log(
       `Attempting to find all products for category with id: ${categoryId}`,
     );
     try {
-      const products = await this.databaseService.product.findMany({
-        where: {
-          categoryId,
-          ...(user.role === 'USER' ? { userId: user.id } : {}),
-        },
-        include: { category: true },
-      });
+      if (page < 1 || limit < 1) {
+        throw new BadRequestException('Invalid page or limit value');
+      }
 
-      return products;
+      const [products, total] = await this.databaseService.$transaction(
+        async (prisma) => {
+          const products = await prisma.product.findMany({
+            where: {
+              categoryId,
+              ...(user.role === 'USER' ? { userId: user.id } : {}),
+            },
+            skip: (page - 1) * limit,
+            take: limit,
+            include: { category: true },
+          });
+
+          const total = await prisma.product.count({
+            where: {
+              categoryId,
+              ...(user.role === 'USER' ? { userId: user.id } : {}),
+            },
+          });
+
+          return [products, total];
+        },
+      );
+
+      const total_pages = Math.ceil(total / limit);
+
+      return { products, total, page, total_pages };
     } catch (error) {
       this.logger.error(
         `Failed to fetch products: ${error.message}`,

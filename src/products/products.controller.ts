@@ -10,6 +10,7 @@ import {
   Request,
   HttpStatus,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -50,8 +51,14 @@ export class ProductsController {
   @Get()
   @ApiOperation({ summary: 'Get all products' })
   @ApiResponse({ status: 200, description: 'Returns all products.' })
-  async getAllProducts(@Request() req) {
-    return this.productsService.findAllProducts(req.user);
+  @ApiParam({ name: 'page', type: 'number' })
+  @ApiParam({ name: 'limit', type: 'number' })
+  async getAllProducts(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Request() req,
+  ) {
+    return this.productsService.findAllProducts(req.user, page, limit);
   }
 
   @Get(':id')
@@ -101,13 +108,19 @@ export class ProductsController {
     description: 'Returns products in the specified category.',
   })
   @ApiParam({ name: 'categoryId', type: 'string' })
+  @ApiParam({ name: 'page', type: 'number' })
+  @ApiParam({ name: 'limit', type: 'number' })
   async getProductsByCategoryId(
     @Param('categoryId') categoryId: string,
+    @Query('page') page: number,
+    @Query('limit') limit: number,
     @Request() req,
   ) {
     return this.productsService.findAllProductsByCategoryId(
       categoryId,
       req.user,
+      page,
+      limit,
     );
   }
 
@@ -119,7 +132,19 @@ export class ProductsController {
     description: 'Returns products created by the specified user.',
   })
   @ApiParam({ name: 'userId', type: 'string' })
-  async getProductsByUserId(@Param('userId') userId: string, @Request() req) {
-    return this.productsService.findAllProductsByUserId(userId, req.user);
+  @ApiParam({ name: 'page', type: 'number' })
+  @ApiParam({ name: 'limit', type: 'number' })
+  async getProductsByUserId(
+    @Param('userId') userId: string,
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Request() req,
+  ) {
+    return this.productsService.findAllProductsByUserId(
+      userId,
+      req.user,
+      page,
+      limit,
+    );
   }
 }

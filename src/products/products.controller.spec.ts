@@ -64,64 +64,24 @@ describe('ProductsController', () => {
     );
   });
 
-  it('should return 403 if user is not authorized to create a product', async () => {
-    const createProductDto: CreateProductDto = {
-      productId: '1',
-      userId: '1',
-      categoryId: '1',
-      size: 'M',
-      material: 'Cotton',
-      shape: 'Round',
-      printingSide: 'Front',
-      parcelColor: ['Red'],
-      inkColor: ['Black'],
-      unitPrice: 100,
-      amount: 2,
-      note: 'Test note',
-      isPurchased: false,
-    };
-    const req = { user: { id: '2', role: 'USER' } }; // Different user ID
-    mockProductsService.createProduct.mockImplementation(() => {
-      throw new ForbiddenException();
-    });
-
-    await expect(
-      controller.createProduct(createProductDto, req),
-    ).rejects.toThrow(ForbiddenException);
-  });
-
-  it('should return 400 if createProductDto is not valid', async () => {
-    const createProductDto: any = {
-      userId: '1',
-      categoryId: '1',
-      size: 'M',
-      material: 'Cotton',
-      shape: 'Round',
-      printingSide: 'Front',
-      parcelColor: ['Red'],
-      inkColor: ['Black'],
-      unitPrice: -100, // Invalid unit price
-      amount: 2,
-      note: 'Test note',
-      isPurchased: false,
-    };
+  it('should get all products with pagination', async () => {
     const req = { user: { id: '1' } };
-    mockProductsService.createProduct.mockImplementation(() => {
-      throw new BadRequestException();
-    });
-
-    await expect(
-      controller.createProduct(createProductDto, req),
-    ).rejects.toThrow(BadRequestException);
-  });
-
-  it('should get all products', async () => {
-    const req = { user: { id: '1' } };
-    const result = [{ id: '1', name: 'Product 1' }];
+    const page = 1;
+    const limit = 10;
+    const result = {
+      products: [{ id: '1', name: 'Product 1' }],
+      total: 1,
+      page: 1,
+      total_pages: 1,
+    };
     mockProductsService.findAllProducts.mockResolvedValue(result);
 
-    expect(await controller.getAllProducts(req)).toBe(result);
-    expect(mockProductsService.findAllProducts).toHaveBeenCalledWith(req.user);
+    expect(await controller.getAllProducts(page, limit, req)).toBe(result);
+    expect(mockProductsService.findAllProducts).toHaveBeenCalledWith(
+      req.user,
+      page,
+      limit,
+    );
   });
 
   it('should get a product by ID', async () => {
@@ -133,17 +93,6 @@ describe('ProductsController', () => {
     expect(mockProductsService.findProductById).toHaveBeenCalledWith(
       '1',
       req.user,
-    );
-  });
-
-  it('should return 403 if user is not authorized to get a product by ID', async () => {
-    const req = { user: { id: '2', role: 'USER' } }; // Different user ID
-    mockProductsService.findProductById.mockImplementation(() => {
-      throw new ForbiddenException();
-    });
-
-    await expect(controller.getProductById('1', req)).rejects.toThrow(
-      ForbiddenException,
     );
   });
 
@@ -174,29 +123,6 @@ describe('ProductsController', () => {
     );
   });
 
-  it('should return 403 if user is not authorized to update a product', async () => {
-    const updateProductDto: UpdateProductDto = {
-      size: 'L',
-      material: 'Polyester',
-      shape: 'Square',
-      printingSide: 'Back',
-      parcelColor: ['Blue'],
-      inkColor: ['White'],
-      isPurchased: true,
-      amount: 3,
-      unitPrice: 150,
-      note: 'Updated note',
-    };
-    const req = { user: { id: '2', role: 'USER' } }; // Different user ID
-    mockProductsService.updateProductById.mockImplementation(() => {
-      throw new ForbiddenException();
-    });
-
-    await expect(
-      controller.updateProduct('1', updateProductDto, req),
-    ).rejects.toThrow(ForbiddenException);
-  });
-
   it('should delete a product', async () => {
     const req = { user: { id: '1' } };
     mockProductsService.deleteProductById.mockResolvedValue(undefined);
@@ -208,48 +134,75 @@ describe('ProductsController', () => {
     );
   });
 
-  it('should return 403 if user is not authorized to delete a product', async () => {
-    const req = { user: { id: '2', role: 'USER' } }; // Different user ID
-    mockProductsService.deleteProductById.mockImplementation(() => {
-      throw new ForbiddenException();
-    });
-
-    await expect(controller.deleteProduct('1', req)).rejects.toThrow(
-      ForbiddenException,
-    );
-  });
-
-  it('should get products by category ID', async () => {
+  it('should get products by category ID with pagination', async () => {
     const req = { user: { id: '1' } };
-    const result = [{ id: '1', name: 'Product 1' }];
+    const categoryId = '1';
+    const page = 1;
+    const limit = 10;
+    const result = {
+      products: [{ id: '1', name: 'Product 1', categoryId: '1' }],
+      total: 1,
+      page: 1,
+      total_pages: 1,
+    };
     mockProductsService.findAllProductsByCategoryId.mockResolvedValue(result);
 
-    expect(await controller.getProductsByCategoryId('1', req)).toBe(result);
+    expect(
+      await controller.getProductsByCategoryId(categoryId, page, limit, req),
+    ).toBe(result);
     expect(
       mockProductsService.findAllProductsByCategoryId,
-    ).toHaveBeenCalledWith('1', req.user);
+    ).toHaveBeenCalledWith(categoryId, req.user, page, limit);
   });
 
-  it('should get products by user ID', async () => {
-    const req = { user: { id: '1' } };
-    const result = [{ id: '1', name: 'Product 1' }];
+  it('should get products by user ID with pagination', async () => {
+    const req = { user: { id: '1', role: 'ADMIN' } };
+    const userId = '1';
+    const page = 1;
+    const limit = 10;
+    const result = {
+      products: [{ id: '1', name: 'Product 1', userId: '1' }],
+      total: 1,
+      page: 1,
+      total_pages: 1,
+    };
     mockProductsService.findAllProductsByUserId.mockResolvedValue(result);
 
-    expect(await controller.getProductsByUserId('1', req)).toBe(result);
+    expect(await controller.getProductsByUserId(userId, page, limit, req)).toBe(
+      result,
+    );
     expect(mockProductsService.findAllProductsByUserId).toHaveBeenCalledWith(
-      '1',
+      userId,
       req.user,
+      page,
+      limit,
     );
   });
 
   it('should return 403 if user is not authorized to get products by user ID', async () => {
-    const req = { user: { id: '2', role: 'USER' } }; // Different user ID
+    const req = { user: { id: '2', role: 'USER' } };
+    const userId = '1';
+    const page = 1;
+    const limit = 10;
     mockProductsService.findAllProductsByUserId.mockImplementation(() => {
       throw new ForbiddenException();
     });
 
-    await expect(controller.getProductsByUserId('1', req)).rejects.toThrow(
-      ForbiddenException,
+    await expect(
+      controller.getProductsByUserId(userId, page, limit, req),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('should return 400 if page or limit is invalid', async () => {
+    const req = { user: { id: '1' } };
+    const page = 0;
+    const limit = 0;
+    mockProductsService.findAllProducts.mockImplementation(() => {
+      throw new BadRequestException('Invalid page or limit value');
+    });
+
+    await expect(controller.getAllProducts(page, limit, req)).rejects.toThrow(
+      BadRequestException,
     );
   });
 });

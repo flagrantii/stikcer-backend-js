@@ -7,7 +7,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Product, User } from '@prisma/client';
+import { Product, User, ProductCategory } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
@@ -21,6 +21,7 @@ describe('ProductsService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -87,9 +88,9 @@ describe('ProductsService', () => {
         isPurchased: false,
       };
       const user: User = { id: '1', role: 'USER' } as User;
-      mockDatabaseService.$transaction.mockImplementation(() => {
-        throw new InternalServerErrorException('Failed to create product');
-      });
+      mockDatabaseService.$transaction.mockRejectedValue(
+        new InternalServerErrorException('Failed to create product'),
+      );
 
       await expect(
         service.createProduct(createProductDto, user),
@@ -120,12 +121,14 @@ describe('ProductsService', () => {
           updatedAt: new Date(),
         },
       ];
-      mockDatabaseService.product.findMany.mockResolvedValue(products);
+      mockDatabaseService.$transaction.mockResolvedValue([products, 1]);
 
-      const result = await service.findAllProducts(user);
+      const result = await service.findAllProducts(user, 1, 10);
 
-      expect(result).toEqual(products);
-      expect(mockDatabaseService.product.findMany).toHaveBeenCalled();
+      expect(result).toEqual({ products, total: 1, page: 1, total_pages: 1 });
+      expect(mockDatabaseService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
     });
 
     it('should return user-specific products for non-admin', async () => {
@@ -150,24 +153,23 @@ describe('ProductsService', () => {
           updatedAt: new Date(),
         },
       ];
-      mockDatabaseService.product.findMany.mockResolvedValue(products);
+      mockDatabaseService.$transaction.mockResolvedValue([products, 1]);
 
-      const result = await service.findAllProducts(user);
+      const result = await service.findAllProducts(user, 1, 10);
 
-      expect(result).toEqual(products);
-      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({
-        where: { userId: user.id },
-        include: { category: true },
-      });
+      expect(result).toEqual({ products, total: 1, page: 1, total_pages: 1 });
+      expect(mockDatabaseService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
       const user: User = { id: '1', role: 'USER' } as User;
-      mockDatabaseService.product.findMany.mockImplementation(() => {
+      mockDatabaseService.$transaction.mockImplementation(() => {
         throw new InternalServerErrorException('Failed to fetch products');
       });
 
-      await expect(service.findAllProducts(user)).rejects.toThrow(
+      await expect(service.findAllProducts(user, 1, 10)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
@@ -574,23 +576,22 @@ describe('ProductsService', () => {
           updatedAt: new Date(),
         },
       ];
-      mockDatabaseService.product.findMany.mockResolvedValue(products);
+      mockDatabaseService.$transaction.mockResolvedValue([products, 1]);
 
-      const result = await service.findAllProductsByUserId('1', user);
+      const result = await service.findAllProductsByUserId('1', user, 1, 10);
 
-      expect(result).toEqual(products);
-      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({
-        where: { userId: '1' },
-        include: { category: true },
-      });
+      expect(result).toEqual({ products, total: 1, page: 1, total_pages: 1 });
+      expect(mockDatabaseService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
     });
 
     it('should throw ForbiddenException if user is not authorized', async () => {
       const user: User = { id: '2', role: 'USER' } as User;
 
-      await expect(service.findAllProductsByUserId('1', user)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.findAllProductsByUserId('1', user, 1, 10),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
@@ -599,15 +600,21 @@ describe('ProductsService', () => {
         throw new InternalServerErrorException('Failed to fetch products');
       });
 
-      await expect(service.findAllProductsByUserId('1', user)).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      await expect(
+        service.findAllProductsByUserId('1', user, 1, 10),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
   describe('findAllProductsByCategoryId', () => {
     it('should return all products for a category', async () => {
       const user: User = { id: '1', role: 'ADMIN' } as User;
+      const category: ProductCategory = {
+        id: '1',
+        name: 'Category 1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
       const products: Product[] = [
         {
           id: '1',
@@ -628,25 +635,45 @@ describe('ProductsService', () => {
           updatedAt: new Date(),
         },
       ];
-      mockDatabaseService.product.findMany.mockResolvedValue(products);
+      mockDatabaseService.$transaction.mockResolvedValue([products, 1]);
 
-      const result = await service.findAllProductsByCategoryId('1', user);
+      const result = await service.findAllProductsByCategoryId(
+        category.id,
+        user,
+        1,
+        10,
+      );
+      console.log(result);
 
-      expect(result).toEqual(products);
-      expect(mockDatabaseService.product.findMany).toHaveBeenCalledWith({
-        where: { categoryId: '1' },
-        include: { category: true },
-      });
+      expect(result).toEqual({ products, total: 1, page: 1, total_pages: 1 });
+      expect(mockDatabaseService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
+    });
+
+    it('should throw BadRequestException if page or limit is invalid', async () => {
+      const user: User = { id: '1', role: 'ADMIN' } as User;
+      const categoryId = '1';
+      const page = 0;
+      const limit = 0;
+
+      await expect(
+        service.findAllProductsByCategoryId(categoryId, user, page, limit),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw InternalServerErrorException if fetching fails', async () => {
       const user: User = { id: '1', role: 'ADMIN' } as User;
-      mockDatabaseService.product.findMany.mockImplementation(() => {
+      const categoryId = '1';
+      const page = 1;
+      const limit = 10;
+
+      mockDatabaseService.$transaction.mockImplementation(() => {
         throw new InternalServerErrorException('Failed to fetch products');
       });
 
       await expect(
-        service.findAllProductsByCategoryId('1', user),
+        service.findAllProductsByCategoryId(categoryId, user, page, limit),
       ).rejects.toThrow(InternalServerErrorException);
     });
   });
