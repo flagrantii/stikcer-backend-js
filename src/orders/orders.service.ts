@@ -72,12 +72,8 @@ export class OrdersService {
   async findAllOrders(user: User): Promise<Order[]> {
     this.logger.log(`Attempting to find all orders for user: ${user.id}`);
     try {
-      if (user.role !== 'ADMIN') {
-        throw new ForbiddenException(
-          'You are not authorized to access all orders',
-        );
-      }
       const orders = await this.databaseService.order.findMany({
+        where: user.role === 'USER' ? { userId: user.id } : {},
         include: { orderLines: true },
       });
       return orders;
