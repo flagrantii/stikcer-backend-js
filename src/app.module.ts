@@ -24,7 +24,7 @@ import { S3Module } from './s3/s3.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PaymentService } from './payment/payment.service';
 import { PaymentModule } from './payment/payment.module';
-
+import { ThrottlerModule } from '@nestjs/throttler';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -39,6 +39,14 @@ import { PaymentModule } from './payment/payment.module';
     S3Module,
     PaymentModule,
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60,
+          limit: 100,
+        },
+      ],
+    }),
   ],
   controllers: [AppController],
   providers: [

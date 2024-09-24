@@ -27,7 +27,7 @@ export class PaymentService {
       }
 
       const response = await axios.post(
-        'https://payment.paysolutions.asia/epaylink/payment.aspx',
+        this.configService.get<string>('PAYMENT_URL'),
         {
           orderNo: createPaymentDto.orderId,
           refNo: refNo,
