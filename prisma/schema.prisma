@@ -120,14 +120,19 @@ model OrderLine {
 }
 
 model Payment {
+  id            String  @id @default(cuid())
   orderId       String  @unique
   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  paymentIntent String
-  amount        Float
-  currency      String
-  status        String
+  refNo         String
+  productDetail String
+  customerEmail String
+  currencyCode  String
+  total         Float
+  lang          String
+  channel       String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
 }
 
 enum OrderStatus {
