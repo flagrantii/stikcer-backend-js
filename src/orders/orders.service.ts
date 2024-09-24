@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { Order, User } from '@prisma/client';
+import { Order, OrderStatus, User } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import * as uuid from 'uuid';
@@ -161,7 +161,9 @@ export class OrdersService {
 
       const updatedOrder = await this.databaseService.order.update({
         where: { id },
-        data: updateOrderDto,
+        data: {
+          status: updateOrderDto.status as OrderStatus,
+        },
         include: { orderLines: true },
       });
 

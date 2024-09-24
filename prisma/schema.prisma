@@ -102,7 +102,7 @@ model Order {
   shippingMethod String
   paymentId      String
   payment        Payment?
-  status         String
+  status         OrderStatus
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 }
@@ -128,4 +128,15 @@ model Payment {
   status        String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  PAYMENT_ACCEPTED
+  PROCESSING
+  AWAITING_SHIPMENT
+  SHIPPED
+  COMPLETED
+  CANCELLED
+  EXPIRED
 }

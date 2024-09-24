@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsPositive, IsString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsPositive, IsString, IsNumber, IsEnum } from 'class-validator';
 import { CreateOrderLineDto } from './create-orderLine.dto';
+import { OrderStatus } from '@prisma/client';
 
 export class CreateOrderDto {
   id: string;
@@ -25,5 +26,6 @@ export class CreateOrderDto {
   orderSubTotal: number;
 
   @IsNotEmpty()
-  status: string = 'pending';
+  @IsEnum(OrderStatus)
+  status: OrderStatus;
 }
